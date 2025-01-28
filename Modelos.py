@@ -7,6 +7,9 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 
+tipoNodos = [1,2,3] # L:1, M:2, H:3
+costos = {1:1,2:3,3:7}
+confiabilidad = {1:0.5,2:0.6,3:0.7}
 
 # Mostrar modelo
 def mostrarModelo(filename,model):
@@ -23,10 +26,6 @@ def mostrarResultados(costo, variablesDecision):
     for v in variablesDecision.keys():
         print(v, variablesDecision[v])
 
-tipoNodos = [1,2,3] # L:1, M:2, H:3
-costos = {1:1,2:3,3:7}
-confiabilidad = {1:0.5,2:0.6,3:0.7}
-
 # Modelo Base
 def base_model(cantidadNodos):
     # Variables
@@ -35,7 +34,7 @@ def base_model(cantidadNodos):
 
     # Crear modelo
     model = Model(f"Modelo_Base_{cantidadNodos}_Nodos")
-    model.setParam('OutputFlag', 0)
+    model.setParam('OutputFlag', 0) # No mostrar salida por defecto de Gurobi
 
     # Variables de decisión
     x = model.addVars(arcos,vtype= GRB.BINARY, name='x') # Variable booleana para determinar si un nodo está activo
@@ -141,7 +140,7 @@ def mostrarResultadosTabla(cantidadNodos, confiabilidadObjetivo, caso, costo, va
 def grafico_costo_vs_confiabilidad_general(costos):
     """
     Genera un gráfico de Costo vs Confiabilidad Objetivo para cada cantidad de nodos fija.
-    
+
     :param costos: Lista de tuplas (nodos, confiabilidad, costo) con los resultados.
     """
     data = pd.DataFrame(costos, columns=['Nodos', 'Confiabilidad', 'Costo'])
@@ -162,7 +161,7 @@ def grafico_costo_vs_confiabilidad_general(costos):
 def grafico_costo_vs_cantidad_nodos_general(costos, confiabilidad_fija):
     """
     Genera un gráfico de Costo vs Cantidad de Nodos para una confiabilidad fija.
-    
+
     :param costos: Lista de tuplas (nodos, confiabilidad, costo) con los resultados.
     :param confiabilidad_fija: Valor de confiabilidad fijo para filtrar los datos.
     """
