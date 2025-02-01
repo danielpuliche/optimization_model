@@ -11,9 +11,9 @@ tipoNodos = [1, 2, 3]  # L:1, M:2, H:3
 costos = {1: 1, 2: 3, 3: 7}
 confiabilidad = {1: 0.5, 2: 0.6, 3: 0.7}
 
+######### Funciones #########
+
 # Mostrar modelo
-
-
 def mostrarModelo(filename, model):
     print(filename)
     if os.path.exists(filename):
@@ -22,17 +22,63 @@ def mostrarModelo(filename, model):
     model.display()
 
 # Mostrar resultados
-
-
 def mostrarResultados(costo, variablesDecision):
     print('===================================')
     print('Función objetivo: ', str(round(costo, 4)))
     for v in variablesDecision.keys():
         print(v, variablesDecision[v])
 
+# Mostrar resultados en tabla
+def mostrarResultadosTabla(cantidadNodos, confiabilidadObjetivo, caso, costo, variablesDecision):
+    # Cantidad de nodos: Integer, cantidad de nodos del sistema
+    # Confiabilidad Objetivo: Float, confiabilidad objetivo del sistema
+    # Caso: Integer, caso de estudio, 0 es serie, 1 es paralelo
+    # Costo: Float, Costo Total del sistema
+    # Variables de decisión: List, Lista con las variables de decisión obtenidas de optimizar el modelo
+
+    if costo is None:
+        print("====================================================")
+        print("Cantidad de Nodos: ", cantidadNodos)
+        print("Confiabilidad Objetivo: ", confiabilidadObjetivo)
+        print("Caso: ", "Serie" if caso == 0 else "Paralelo")
+        print("====================================================")
+        print("No se encontró solución")
+    else:
+        print("====================================================")
+        print("Cantidad de Nodos: ", cantidadNodos)
+        print("Confiabilidad Objetivo: ", confiabilidadObjetivo)
+        print("Caso: ", "Serie" if caso == 0 else "Paralelo")
+        print("====================================================")
+        print("Resultado de la Optimización:")
+        print("====================================================")
+        print("Costo Total: ", costo)
+        print("Nodos activos: \n")
+
+        xVars = dict()
+        for var in variablesDecision.keys():
+            if var.startswith("x"):
+                xVars[var] = variablesDecision[var]
+
+        activeNodes = []
+        for i in range(cantidadNodos):
+            valores = []
+            pattern = re.compile(r'^x\[' + str(i) + r',')
+            for var in xVars.keys():
+                if pattern.match(var):
+                    valores.append(int(xVars[var]))
+            activeNodes.append(valores)
+
+        columns_titles = ["Low Cost", "Mid Cost", "High Cost"]
+        row_index = [i+1 for i in range(cantidadNodos)]
+
+        tabla = pd.DataFrame(
+            activeNodes, columns=columns_titles, index=row_index)
+        print(tabla)
+        print("====================================================")
+
+######## Modelos ########
+
 # Modelo Base
-
-
 def base_model(cantidadNodos):
     # Variables
     nodos = list(range(cantidadNodos))
@@ -59,8 +105,6 @@ def base_model(cantidadNodos):
     return model
 
 # Modelo para nodos en serie
-
-
 def serie_model(model_base, cantidadNodos, confiabilidadObjetivo):
     model_base.update()
     model = model_base.copy()
@@ -104,10 +148,52 @@ def serie_model(model_base, cantidadNodos, confiabilidadObjetivo):
     else:
         return None, None
 
+# Modelo para nodos en paralelo
+def paralelo_model(model_base, cantidadNodos, confiabilidadObjetivo):
+    model_base.update()
+    model = model_base.copy()
+
+    nodos = list(range(cantidadNodos))
+    x = model.getVars()
+    x = {tuple(map(int, var.varName.split('[')[1].split(']')[0].split(','))): var
+         for var in model.getVars() if "x" in var.varName}
+
+    # Variables nuevas
+    # Sumatoria interna de la confiabilidad en paralelo
+    z = model.addVars(nodos, vtype=GRB.CONTINUOUS, lb=0.1, name='z')
+    log_z = model.addVars(nodos, vtype=GRB.CONTINUOUS,
+                          name='log_z')  # Logaritmo natural de z
+
+    # Restricciones
+    # 2.1. Relación entre z y x
+    for u in nodos:
+        model.addConstr(z[u] == sum((1/(1-confiabilidad[i])) * x[u, i] for i in tipoNodos), name=f"z_u_{u}")
+
+    # 2.2. Logaritmo de z_u
+    for u in nodos:
+        model.addGenConstrLog(z[u], log_z[u], name=f"log_z_{u}")
+
+    # 2.3. Restricción de la productoria
+    model.addConstr(-quicksum(log_z[u] for u in nodos) <= math.log(1-confiabilidadObjetivo), name="log_prod")
+
+    # Optimizar
+    model.optimize()
+
+    if model.status == GRB.OPTIMAL:
+        costo = model.objVal
+
+        variablesDecision = dict()
+        for var in model.getVars():
+            variablesDecision[var.varName] = var.x
+
+        return costo, variablesDecision
+    else:
+        return None, None
+
+###### Funciones para gráficos ######
+
 # Mostrar resultados
-
-
-def mostrarResultadosTabla(costos, tipoNodos):
+def mostrarResultadosTabla2(costos, tipoNodos):
     """
     Muestra los resultados en una tabla basada de costo y dde nodos,
     """
@@ -117,54 +203,6 @@ def mostrarResultadosTabla(costos, tipoNodos):
 
     print("\nResultados en formato tabular:\n")
     print(resultado_df.to_markdown(tablefmt="double_grid", index=False))
-
-# def mostrarResultadosTabla(cantidadNodos, confiabilidadObjetivo, caso, costo, variablesDecision):
-#     # Cantidad de nodos: Integer, cantidad de nodos del sistema
-#     # Confiabilidad Objetivo: Float, confiabilidad objetivo del sistema
-#     # Caso: Integer, caso de estudio, 0 es serie, 1 es paralelo
-#     # Costo: Float, Costo Total del sistema
-#     # Variables de decisión: List, Lista con las variables de decisión obtenidas de optimizar el modelo
-
-#     if costo is None:
-#         print("====================================================")
-#         print("Cantidad de Nodos: ", cantidadNodos)
-#         print("Confiabilidad Objetivo: ", confiabilidadObjetivo)
-#         print("Caso: ", "Serie" if caso == 0 else "Paralelo")
-#         print("====================================================")
-#         print("No se encontró solución")
-#     else:
-#         print("====================================================")
-#         print("Cantidad de Nodos: ", cantidadNodos)
-#         print("Confiabilidad Objetivo: ", confiabilidadObjetivo)
-#         print("Caso: ", "Serie" if caso == 0 else "Paralelo")
-#         print("====================================================")
-#         print("Resultado de la Optimización:")
-#         print("====================================================")
-#         print("Costo Total: ", costo)
-#         print("Nodos activos: \n")
-
-#         xVars = dict()
-#         for var in variablesDecision.keys():
-#             if var.startswith("x"):
-#                 xVars[var] = variablesDecision[var]
-
-#         activeNodes = []
-#         for i in range(cantidadNodos):
-#             valores = []
-#             pattern = re.compile(r'^x\[' + str(i) + r',')
-#             for var in xVars.keys():
-#                 if pattern.match(var):
-#                     valores.append(int(xVars[var]))
-#             activeNodes.append(valores)
-
-#         columns_titles = ["Low Cost", "Mid Cost", "High Cost"]
-#         row_index = [i+1 for i in range(cantidadNodos)]
-
-#         tabla = pd.DataFrame(
-#             activeNodes, columns=columns_titles, index=row_index)
-#         print(tabla)
-#         print("====================================================")
-
 
 def grafico_costo_vs_cantidad_nodos_general(costos):
     """
@@ -188,7 +226,6 @@ def grafico_costo_vs_cantidad_nodos_general(costos):
     plt.grid(True)
     plt.legend()
     plt.show()
-
 
 def grafico_barras_confiabilidad(costos, tipoNodos):
     """
@@ -245,63 +282,3 @@ def grafico_barras_confiabilidad(costos, tipoNodos):
     plt.legend()
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
-
-# def grafico_barras_confiabilidad(costos, tipoNodos):
-#     """
-#     Genera un gráfico de barras donde cada barra representa una confiabilidad específica,
-#     subdividida en segmentos que indican el número de nodos de cada tipo (Low, Medium, High).
-
-#     :param costos: Lista de tuplas (nodos, confiabilidad, costo) con los resultados.
-#     :param tipoNodos: Lista de diccionarios con los conteos de nodos por tipo para cada confiabilidad.
-#     """
-#     data = pd.DataFrame(
-#         costos, columns=['Nodos', 'Confiabilidad', 'Costo']).set_index('Confiabilidad')
-#     confiabilidades_unicas = sorted(data.index.unique())
-#     x = np.arange(len(confiabilidades_unicas))  # Posiciones en el eje X
-
-#     # Ajustar la longitud de tipoNodos para que coincida con confiabilidades_unicas
-#     if len(tipoNodos) > len(confiabilidades_unicas):
-#         tipoNodos = tipoNodos[:len(confiabilidades_unicas)]
-#     elif len(tipoNodos) < len(confiabilidades_unicas):
-#         missing_rows = len(confiabilidades_unicas) - len(tipoNodos)
-#         tipoNodos.extend([{'Low': 0, 'Medium': 0, 'High': 0}] * missing_rows)
-
-#     tipo_nodos_df = pd.DataFrame(tipoNodos, index=confiabilidades_unicas)
-
-#     low_counts = tipo_nodos_df['Low'].values
-#     medium_counts = tipo_nodos_df['Medium'].values
-#     high_counts = tipo_nodos_df['High'].values
-
-#     # Ajustar el eje Y para reflejar el rango de nodos ingresados en el notebook
-#     min_nodos = min(data['Nodos'])
-#     max_nodos = max(data['Nodos'])
-#     step_size = max(1, (max_nodos - min_nodos) // 5)
-
-#     plt.figure(figsize=(12, 7))
-
-#     # Crear las barras apiladas
-#     bars1 = plt.bar(x, low_counts, label='Low Cost Nodes', color='blue')
-#     bars2 = plt.bar(x, medium_counts, bottom=low_counts,
-#                     label='Medium Cost Nodes', color='orange')
-#     bars3 = plt.bar(x, high_counts, bottom=np.add(
-#         low_counts, medium_counts), label='High Cost Nodes', color='green')
-
-#     # Añadir etiquetas de valores en las barras
-#     for bars in [bars1, bars2, bars3]:
-#         for bar in bars:
-#             height = bar.get_height()
-#             if height > 0:
-#                 plt.text(bar.get_x() + bar.get_width() / 2, bar.get_y() + height / 2,
-#                          f'{int(height)}', ha='center', va='center', fontsize=10, color='white', fontweight='bold')
-
-#     plt.xticks(x, [f"{conf:.2f}" for conf in confiabilidades_unicas])
-#     plt.title("Distribución de Nodos por Confiabilidad Específica")
-#     plt.xlabel("Confiabilidad Objetivo")
-#     plt.ylabel("Número de Nodos")
-#     # Ajuste automático del eje Y dentro del rango definido
-#     plt.ylim(min_nodos - 1, max_nodos + 1)
-#     # Ajustar la escala del eje Y
-#     plt.yticks(np.arange(min_nodos, max_nodos + step_size, step_size))
-#     plt.legend()
-#     plt.grid(axis='y', linestyle='--', alpha=0.7)
-#     plt.show()
