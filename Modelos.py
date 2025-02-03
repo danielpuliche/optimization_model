@@ -14,6 +14,8 @@ confiabilidad = {1: 0.5, 2: 0.6, 3: 0.7}
 ######### Funciones #########
 
 # Mostrar modelo
+
+
 def mostrarModelo(filename, model):
     print(filename)
     if os.path.exists(filename):
@@ -22,6 +24,8 @@ def mostrarModelo(filename, model):
     model.display()
 
 # Mostrar resultados
+
+
 def mostrarResultados(costo, variablesDecision):
     print('===================================')
     print('Función objetivo: ', str(round(costo, 4)))
@@ -29,6 +33,8 @@ def mostrarResultados(costo, variablesDecision):
         print(v, variablesDecision[v])
 
 # Mostrar resultados en tabla
+
+
 def mostrarResultadosTabla(cantidadNodos, confiabilidadObjetivo, caso, costo, variablesDecision):
     # Cantidad de nodos: Integer, cantidad de nodos del sistema
     # Confiabilidad Objetivo: Float, confiabilidad objetivo del sistema
@@ -79,6 +85,8 @@ def mostrarResultadosTabla(cantidadNodos, confiabilidadObjetivo, caso, costo, va
 ######## Modelos ########
 
 # Modelo Base
+
+
 def base_model(cantidadNodos):
     # Variables
     nodos = list(range(cantidadNodos))
@@ -105,6 +113,8 @@ def base_model(cantidadNodos):
     return model
 
 # Modelo para nodos en serie
+
+
 def serie_model(model_base, cantidadNodos, confiabilidadObjetivo):
     model_base.update()
     model = model_base.copy()
@@ -149,6 +159,8 @@ def serie_model(model_base, cantidadNodos, confiabilidadObjetivo):
         return None, None
 
 # Modelo para nodos en paralelo
+
+
 def paralelo_model(model_base, cantidadNodos, confiabilidadObjetivo):
     model_base.update()
     model = model_base.copy()
@@ -167,14 +179,16 @@ def paralelo_model(model_base, cantidadNodos, confiabilidadObjetivo):
     # Restricciones
     # 2.1. Relación entre z y x
     for u in nodos:
-        model.addConstr(z[u] == sum((1/(1-confiabilidad[i])) * x[u, i] for i in tipoNodos), name=f"z_u_{u}")
+        model.addConstr(z[u] == sum((1/(1-confiabilidad[i])) * x[u, i]
+                        for i in tipoNodos), name=f"z_u_{u}")
 
     # 2.2. Logaritmo de z_u
     for u in nodos:
         model.addGenConstrLog(z[u], log_z[u], name=f"log_z_{u}")
 
     # 2.3. Restricción de la productoria
-    model.addConstr(-quicksum(log_z[u] for u in nodos) <= math.log(1-confiabilidadObjetivo), name="log_prod")
+    model.addConstr(-quicksum(log_z[u] for u in nodos) <=
+                    math.log(1-confiabilidadObjetivo), name="log_prod")
 
     # Optimizar
     model.optimize()
@@ -193,6 +207,8 @@ def paralelo_model(model_base, cantidadNodos, confiabilidadObjetivo):
 ###### Funciones para gráficos ######
 
 # Mostrar resultados
+
+
 def mostrarResultadosTabla2(costos, tipoNodos):
     """
     Muestra los resultados en una tabla basada de costo y dde nodos,
@@ -203,6 +219,7 @@ def mostrarResultadosTabla2(costos, tipoNodos):
 
     print("\nResultados en formato tabular:\n")
     print(resultado_df.to_markdown(tablefmt="double_grid", index=False))
+
 
 def grafico_costo_vs_cantidad_nodos_general(costos):
     """
@@ -227,58 +244,69 @@ def grafico_costo_vs_cantidad_nodos_general(costos):
     plt.legend()
     plt.show()
 
+
 def grafico_barras_confiabilidad(costos, tipoNodos):
     """
-    Genera un gráfico de barras donde cada barra representa un rango de confiabilidad subdividido
-    en segmentos que indican el número de nodos de cada tipo (Low, Medium, High).
 
-    :param costos: Lista de tuplas (nodos, confiabilidad, costo) con los resultados.
-    :param tipoNodos: Lista de diccionarios con los conteos de nodos por tipo para cada confiabilidad.
     """
     data = pd.DataFrame(costos, columns=['Nodos', 'Confiabilidad', 'Costo'])
+    tipo_nodos_df = pd.DataFrame(tipoNodos)
+    data = pd.concat([data, tipo_nodos_df], axis=1)
 
-    # Definir rangos de confiabilidad (porcentajes)
-    rangos = ["Baja (0-1%)", "Media (1-3%)", "Alta (>3%)"]
-    data['Rango'] = pd.cut(data['Confiabilidad'] * 100,
-                           bins=[0, 1, 3, np.inf], labels=rangos)
+    # Obtener valores únicos de cantidad de nodos y confiabilidad
+    nodos_unicos = sorted(data['Nodos'].unique())
 
-    # Agrupar tipoNodos por rangos dinámicamente
-    rango_map = {rango: {'Low': 0, 'Medium': 0, 'High': 0} for rango in rangos}
-    for idx, row in data.iterrows():
-        rango = row['Rango']
-        nodo_tipo = tipoNodos[idx]
-        rango_map[rango]['Low'] += nodo_tipo['Low']
-        rango_map[rango]['Medium'] += nodo_tipo['Medium']
-        rango_map[rango]['High'] += nodo_tipo['High']
+    confiabilidades_unicas = sorted(data['Confiabilidad'].unique())
 
-    # Preparar datos finales para las barras
-    low_counts = [rango_map[r]['Low'] for r in rangos]
-    medium_counts = [rango_map[r]['Medium'] for r in rangos]
-    high_counts = [rango_map[r]['High'] for r in rangos]
-
-    x = np.arange(len(rangos))  # Posiciones en el eje X
+    x = np.arange(len(nodos_unicos))  # Posiciones en el eje X
+    width = 0.25  # Ancho de cada grupo de barras
 
     plt.figure(figsize=(12, 7))
 
-    # Crear las barras apiladas
-    bars1 = plt.bar(x, low_counts, label='Low Cost Nodes', color='blue')
-    bars2 = plt.bar(x, medium_counts, bottom=low_counts,
-                    label='Medium Cost Nodes', color='orange')
-    bars3 = plt.bar(x, high_counts, bottom=np.add(
-        low_counts, medium_counts), label='High Cost Nodes', color='green')
+    colors = {'Low': 'royalblue',
+              'Medium': 'darkorange', 'High': 'forestgreen'}
+    bottom_values = {conf: np.zeros(len(nodos_unicos))
+                     for conf in confiabilidades_unicas}
 
-    # Añadir etiquetas de valores en las barras
-    for bars in [bars1, bars2, bars3]:
-        for bar in bars:
-            height = bar.get_height()
-            if height > 0:
-                plt.text(bar.get_x() + bar.get_width() / 2, bar.get_y() + height / 2,
-                         f'{int(height)}', ha='center', va='center', fontsize=10, color='white')
+    for conf in confiabilidades_unicas:
+        for tipo in ['Low', 'Medium', 'High']:
+            tipo_counts = [data[(data['Nodos'] == n) & (data['Confiabilidad'] == conf)][tipo].sum()
+                           for n in nodos_unicos
+                           ]
 
-    plt.xticks(x, rangos)
-    plt.title("Distribución de Nodos por Rango de Confiabilidad")
-    plt.xlabel("Rango de Confiabilidad")
-    plt.ylabel("Número de Nodos")
-    plt.legend()
+            bars = plt.bar(
+                x + confiabilidades_unicas.index(conf) * width - width,
+                tipo_counts,
+                width=width,
+                label=f"{tipo}" if conf == confiabilidades_unicas[0] else "",
+                color=colors[tipo],
+                edgecolor='black',
+                bottom=bottom_values[conf],
+            )
+
+            # Añadir etiquetas dentro de las barras
+            for bar in bars:
+                height = bar.get_height()
+                if height > 0:
+                    plt.text(bar.get_x() + bar.get_width() / 2, bar.get_y() + height / 2,
+                             f'{int(height)}', ha='center', va='center', fontsize=10, color='white', fontweight='bold')
+
+            # Acumular alturas para el apilamiento correcto
+            bottom_values[conf] += tipo_counts
+
+        # Agregar etiqueta de confiabilidad en la parte superior de cada grupo de barras
+        for i, n in enumerate(nodos_unicos):
+            total_height = bottom_values[conf][i]
+            if total_height > 0:
+                plt.text(x[i] + confiabilidades_unicas.index(conf) * width - width, total_height + 0.5,
+                         f"{conf*100:.0f}%", ha='center', fontsize=12, fontweight='bold', color='black')
+
+    plt.xticks(x, [f"{n}" for n in nodos_unicos])
+    plt.title("Distribución de Nodos por Cantidad de Nodos y Confiabilidad")
+    plt.xlabel("Number of Nodes")
+    plt.ylabel("Total Nodes per Configuration")
+
+    plt.legend(title="Node Type", loc='upper left', bbox_to_anchor=(1, 1))
     plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.ylim(0, max(bottom_values[conf]) * 1.2)
     plt.show()
