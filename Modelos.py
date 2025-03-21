@@ -8,14 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 tipoNodos = [1, 2, 3]  # L:1, M:2, H:3
-costos = {1: 1, 2: 3, 3: 7}
-confiabilidad = {1: 0.5, 2: 0.6, 3: 0.7}
 
 ######### Funciones #########
 
 # Mostrar modelo
-
-
 def mostrarModelo(filename, model):
     print(filename)
     if os.path.exists(filename):
@@ -24,8 +20,6 @@ def mostrarModelo(filename, model):
     model.display()
 
 # Mostrar resultados
-
-
 def mostrarResultados(costo, variablesDecision):
     print('===================================')
     print('Función objetivo: ', str(round(costo, 4)))
@@ -33,8 +27,6 @@ def mostrarResultados(costo, variablesDecision):
         print(v, variablesDecision[v])
 
 # Mostrar resultados en tabla
-
-
 def mostrarResultadosTabla(cantidadNodos, confiabilidadObjetivo, caso, costo, variablesDecision):
     # Cantidad de nodos: Integer, cantidad de nodos del sistema
     # Confiabilidad Objetivo: Float, confiabilidad objetivo del sistema
@@ -85,9 +77,7 @@ def mostrarResultadosTabla(cantidadNodos, confiabilidadObjetivo, caso, costo, va
 ######## Modelos ########
 
 # Modelo Base
-
-
-def base_model(cantidadNodos):
+def base_model(cantidadNodos, confiabilidad, costos):
     # Variables
     nodos = list(range(cantidadNodos))
     arcos = [(i, j) for i in nodos for j in tipoNodos]
@@ -113,9 +103,7 @@ def base_model(cantidadNodos):
     return model
 
 # Modelo para nodos en serie
-
-
-def serie_model(model_base, cantidadNodos, confiabilidadObjetivo):
+def serie_model(model_base, cantidadNodos, confiabilidadObjetivo, confiabilidad, costos):
     model_base.update()
     model = model_base.copy()
 
@@ -159,9 +147,7 @@ def serie_model(model_base, cantidadNodos, confiabilidadObjetivo):
         return None, None
 
 # Modelo para nodos en paralelo
-
-
-def paralelo_model(model_base, cantidadNodos, confiabilidadObjetivo):
+def paralelo_model(model_base, cantidadNodos, confiabilidadObjetivo, confiabilidad, costos):
     model_base.update()
     model = model_base.copy()
 
@@ -207,8 +193,6 @@ def paralelo_model(model_base, cantidadNodos, confiabilidadObjetivo):
 ###### Funciones para gráficos ######
 
 # Mostrar resultados
-
-
 def mostrarResultadosTabla2(costos, tipoNodos):
     """
     Muestra los resultados en una tabla basada de costo y dde nodos,
@@ -219,7 +203,6 @@ def mostrarResultadosTabla2(costos, tipoNodos):
 
     print("\nResultados en formato tabular:\n")
     print(resultado_df.to_markdown(tablefmt="double_grid", index=False))
-
 
 def grafico_costo_vs_cantidad_nodos_general(costos):
     """
@@ -243,7 +226,6 @@ def grafico_costo_vs_cantidad_nodos_general(costos):
     plt.grid(True)
     plt.legend()
     plt.show()
-
 
 def grafico_barras_confiabilidad(costos, tipoNodos):
     """
