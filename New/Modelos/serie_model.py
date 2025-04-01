@@ -1,6 +1,12 @@
+# ============================================================
+# Importación de librerías necesarias
+# ============================================================
 import gurobipy as gp
 from gurobipy import GRB
 
+# ============================================================
+# Función principal: serie_model
+# ============================================================
 def serie_model(model_base, N, L):
     """
     Extiende el modelo base para incluir las restricciones y costos específicos del modelo en serie.
@@ -15,20 +21,31 @@ def serie_model(model_base, N, L):
     - variables_decision (dict): Diccionario con las variables de decisión y sus valores.
     - model (gurobipy.Model): Modelo optimizado de Gurobi.
     """
+    # ========================================================
     # Validación de entrada
+    # ========================================================
     if N < 4:
         raise ValueError("El número de nodos debe ser al menos 4.")
     if L <= 0:
         raise ValueError("El costo de un enlace (L) debe ser mayor a 0.")
 
-    # Copiar el modelo base
+    # ========================================================
+    # Copia del modelo base
+    # ========================================================
+    # Crear una copia del modelo base para extenderlo
     model = model_base.copy()
 
+    # ========================================================
+    # Recuperación de variables del modelo base
+    # ========================================================
     # Recuperar la variable linksCost del modelo base
     linksCost = model.getVarByName("linksCost")
     if linksCost is None:
         raise ValueError("No se encontró la variable de costo de enlaces en el modelo base.")
 
+    # ========================================================
+    # Modificación de restricciones
+    # ========================================================
     # Eliminar la restricción general de linksCost (si existe)
     # Esto es necesario para evitar conflictos al agregar la nueva restricción
     linksCost_Condition = model.getConstrByName("LinksCost_General")
@@ -36,13 +53,17 @@ def serie_model(model_base, N, L):
         model.remove(linksCost_Condition)
 
     # Agregar la restricción específica del modelo en serie para el costo de enlaces
-    # linksCost = L * (N - 1)
-    # donde L es el costo de un enlace y N es el número de nodos
+    # linksCost = L * (N - 1), donde L es el costo de un enlace y N es el número de nodos
     model.addConstr(linksCost == L * (N - 1), name="LinksCost_Serie")
 
-    # Optimizar el modelo
+    # ========================================================
+    # Optimización del modelo
+    # ========================================================
     model.optimize()
 
+    # ========================================================
+    # Verificación de la solución
+    # ========================================================
     # Verificar si se encontró una solución óptima
     if model.status == GRB.OPTIMAL:
         # Extraer las variables de decisión y sus valores

@@ -1,6 +1,12 @@
+# ============================================================
+# Importación de librerías necesarias
+# ============================================================
 import gurobipy as gp
 from gurobipy import GRB
 
+# ============================================================
+# Función principal: hibrid_model
+# ============================================================
 def hibrid_model(model_base, N, L):
     """
     Extiende el modelo base para incluir las restricciones y costos específicos del modelo híbrido.
@@ -15,19 +21,29 @@ def hibrid_model(model_base, N, L):
     - variables_decision (dict): Diccionario con las variables de decisión y sus valores.
     - model (gurobipy.Model): Modelo optimizado de Gurobi.
     """
+    # ========================================================
     # Validación de entrada
+    # ========================================================
     if N < 4:
         raise ValueError("El número de nodos debe ser al menos 4.")
     if L <= 0:
         raise ValueError("El costo de un enlace (L) debe ser mayor a 0.")
 
-    # Conjuntos
+    # ========================================================
+    # Definición de conjuntos
+    # ========================================================
     U = range(N)  # Nodos a desplegar
     J = range(N // 3 + 1)  # Subredes (0: serie, 1 en adelante: paralelo)
 
-    # Copiar el modelo base
+    # ========================================================
+    # Copia del modelo base
+    # ========================================================
+    # Crear una copia del modelo base para extenderlo
     model = model_base.copy()
 
+    # ========================================================
+    # Recuperación de variables del modelo base
+    # ========================================================
     # Recuperar la variable linksCost del modelo base
     linksCost = model.getVarByName("linksCost")
     if linksCost is None:
@@ -38,17 +54,18 @@ def hibrid_model(model_base, N, L):
     if linksCost_Condition is not None:
         model.remove(linksCost_Condition)
 
-    # Variables adicionales
+    # ========================================================
+    # Definición de variables adicionales
+    # ========================================================
     y = model.addVars(U, J, vtype=GRB.BINARY, name="y")  # Nodo u pertenece a la subred j
     alpha = model.addVars(J, vtype=GRB.BINARY, name="alpha")  # Subred j activa o no
     p = model.addVars(J, vtype=GRB.INTEGER, name="p")  # Número de nodos en la subred j
     z = model.addVars(J, vtype=GRB.INTEGER, name="z")  # Número de enlaces en paralelo por subred j
     N_s = model.addVar(vtype=GRB.INTEGER, name="N_s")  # Número de nodos en la subred serie (j = 0)
 
-    # ============================
+    # ========================================================
     # Definiciones de variables auxiliares
-    # ============================
-
+    # ========================================================
     # Definición: Número de nodos en la subred serie (j = 0)
     model.addConstr(N_s == gp.quicksum(y[u, 0] for u in U), name="Ns_def")
 
@@ -64,10 +81,9 @@ def hibrid_model(model_base, N, L):
         name="Enlaces_Paralelo_Subred"
     )
 
-    # ============================
+    # ========================================================
     # Restricciones del modelo
-    # ============================
-
+    # ========================================================
     # Restricción: Cada nodo debe pertenecer a una única subred
     model.addConstrs(
         (gp.quicksum(y[u, j] for j in J) == 1 for u in U),
@@ -92,10 +108,9 @@ def hibrid_model(model_base, N, L):
         name="AlMenosUnaSubredActiva"
     )
 
-    # ============================
+    # ========================================================
     # Cálculo del costo de enlaces
-    # ============================
-
+    # ========================================================
     # H: Número de enlaces adicionales entre subredes paralelas
     H = gp.quicksum(alpha[j] for j in J if j > 0) - 1  # Enlaces adicionales por subredes paralelas
 
@@ -108,9 +123,14 @@ def hibrid_model(model_base, N, L):
         name="LinksCost_Hibrido"
     )
 
-    # Optimizar el modelo
+    # ========================================================
+    # Optimización del modelo
+    # ========================================================
     model.optimize()
 
+    # ========================================================
+    # Verificación de la solución
+    # ========================================================
     # Verificar si se encontró una solución óptima
     if model.status == GRB.OPTIMAL:
         # Extraer las variables de decisión y sus valores
