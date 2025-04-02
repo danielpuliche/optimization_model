@@ -1,5 +1,7 @@
 import pandas as pd
 import re
+import numpy as np
+import matplotlib.pyplot as plt
 
 def mostrarResultadosTabla(totalNodes, minimizedCost, decisionVariables, tipo="general"):
     """
@@ -72,3 +74,42 @@ def procesarVariablesActivas(variables, cantidadNodos, prefix):
                 valores.append(int(val))
         activeNodes.append(valores)
     return activeNodes
+
+def generate_equidistant_list(start, end, num_elements):
+    """
+    Generates a list of equidistant numbers between two given floats, excluding the endpoints.
+
+    Args:
+        start: The starting float.
+        end: The ending float.
+        num_elements: The number of elements in the resulting list.
+
+    Returns:
+        A list of equidistant floats between start and end (excluding start and end).
+        Returns an empty list if num_elements is zero or less.
+        Returns an empty list if start and end are the same
+    """
+
+    if num_elements <=0:
+        raise ValueError("num_elements must be greater than 0")
+    if start == end:
+        raise ValueError("start and end must be different")
+    if end < start:
+        raise ValueError("end must be greater than start")
+
+    step = (end - start) / (num_elements + 1)
+    result = []
+    for i in range(1, num_elements+1):
+        result.append(round(start + i * step, 8))
+    return result
+
+def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
+    plt.figure(figsize=(10, 6))
+    plt.plot(requiredReliabilities, serieMinimizedCosts, marker='o', linestyle='-', color='b')
+    plt.title('Costos Minimizados vs Fiabilidad Requerida')
+    plt.xlabel('Fiabilidad Requerida')
+    plt.ylabel('Costos Minimizados')
+    plt.grid(True)
+    for x, y in zip(requiredReliabilities, serieMinimizedCosts):
+        plt.text(x, y, f'{y:.2f}', fontsize=9, ha='right', va='bottom')
+    plt.show()
