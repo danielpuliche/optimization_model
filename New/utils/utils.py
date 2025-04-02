@@ -100,7 +100,7 @@ def generate_equidistant_list(start, end, num_elements):
     step = (end - start) / (num_elements + 1)
     result = []
     for i in range(1, num_elements+1):
-        result.append(round(start + i * step, 8))
+        result.append(round(start + i * step, 12))
     return result
 
 def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
@@ -111,5 +111,5 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
     plt.ylabel('Costos Minimizados')
     plt.grid(True)
     for x, y in zip(requiredReliabilities, serieMinimizedCosts):
-        plt.text(x, y, f'{y:.2f}', fontsize=9, ha='right', va='bottom')
+        plt.text(x, y, f'x = {x:.2f}\ny = {y:.2f}', fontsize=9, ha='right', va='bottom')
     plt.show()
