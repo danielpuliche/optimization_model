@@ -1,72 +1,47 @@
-# ============================================================
-# Importación de librerías necesarias
-# ============================================================
 import gurobipy as gp
 from gurobipy import GRB
 
-# ============================================================
-# Función principal: serie_model
-# ============================================================
-def serie_model(model_base, N, L):
+def serie_model(baseModel, totalNodes, linkCost):
     """
-    Extiende el modelo base para incluir las restricciones y costos específicos del modelo en serie.
+    Extiende el modelo base para incluir restricciones y costos del modelo en serie.
 
     Parámetros:
-    - model_base (gurobipy.Model): Modelo base generado por base_model.
-    - N (int): Número de nodos en la red.
-    - L (float): Costo de un enlace.
+    - baseModel (gurobipy.Model): Modelo base generado por base_model.
+    - totalNodes (int): Número de nodos en la red (mínimo 4).
+    - linkCost (float): Costo de un enlace (debe ser mayor a 0).
 
     Retorna:
     - costo_total (float): Costo total de la solución.
-    - variables_decision (dict): Diccionario con las variables de decisión y sus valores.
-    - model (gurobipy.Model): Modelo optimizado de Gurobi.
+    - variables_decision (dict): Variables de decisión y sus valores.
+    - model (gurobipy.Model): Modelo optimizado.
     """
-    # ========================================================
     # Validación de entrada
-    # ========================================================
-    if N < 4:
+    if totalNodes < 4:
         raise ValueError("El número de nodos debe ser al menos 4.")
-    if L <= 0:
-        raise ValueError("El costo de un enlace (L) debe ser mayor a 0.")
+    if linkCost <= 0:
+        raise ValueError("El costo de un enlace debe ser mayor a 0.")
 
-    # ========================================================
     # Copia del modelo base
-    # ========================================================
-    # Crear una copia del modelo base para extenderlo
-    model = model_base.copy()
+    model = baseModel.copy()
 
-    # ========================================================
-    # Recuperación de variables del modelo base
-    # ========================================================
     # Recuperar la variable linksCost del modelo base
     linksCost = model.getVarByName("linksCost")
     if linksCost is None:
-        raise ValueError("No se encontró la variable de costo de enlaces en el modelo base.")
+        raise ValueError("No se encontró la variable linksCost en el modelo base.")
 
-    # ========================================================
-    # Modificación de restricciones
-    # ========================================================
-    # Eliminar la restricción general de linksCost (si existe)
-    # Esto es necesario para evitar conflictos al agregar la nueva restricción
+    # Eliminar restricción general de linksCost (si existe)
     linksCost_Condition = model.getConstrByName("LinksCost_General")
-    if linksCost_Condition is not None:
+    if linksCost_Condition:
         model.remove(linksCost_Condition)
 
-    # Agregar la restricción específica del modelo en serie para el costo de enlaces
-    # linksCost = L * (N - 1), donde L es el costo de un enlace y N es el número de nodos
-    model.addConstr(linksCost == L * (N - 1), name="LinksCost_Serie")
+    # Agregar restricción específica del modelo en serie
+    model.addConstr(linksCost == linkCost * (totalNodes - 1), name="LinksCost_Serie")
 
-    # ========================================================
-    # Optimización del modelo
-    # ========================================================
+    # Optimizar el modelo
     model.optimize()
 
-    # ========================================================
-    # Verificación de la solución
-    # ========================================================
-    # Verificar si se encontró una solución óptima
+    # Verificar solución óptima
     if model.status == GRB.OPTIMAL:
-        # Extraer las variables de decisión y sus valores
         variables_decision = {var.varName: var.x for var in model.getVars()}
         return model.objVal, variables_decision, model
     else:

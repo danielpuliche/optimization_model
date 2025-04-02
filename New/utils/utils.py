@@ -1,48 +1,49 @@
 import pandas as pd
 import re
 
-def mostrarResultadosTabla(cantidadNodos, costo, variablesDecision, tipo="general"):
+def mostrarResultadosTabla(totalNodes, minimizedCost, decisionVariables, tipo="general"):
     """
-    Función genérica para mostrar resultados de optimización en tablas.
+    Muestra los resultados de optimización en formato tabular.
 
     Parámetros:
-    - cantidadNodos (int): Número de nodos en el modelo.
-    - costo (float): Costo total de la solución.
-    - variablesDecision (dict): Diccionario con las variables de decisión y sus valores.
+    - totalNodes (int): Número de nodos en el modelo.
+    - minimizedCost (float): Costo total de la solución.
+    - decisionVariables (dict): Variables de decisión y sus valores.
     - tipo (str): Tipo de modelo ("general", "hibrido").
     """
     print("=" * 52)
-    print(f"Cantidad de Nodos: {cantidadNodos}")
+    print(f"Cantidad de Nodos: {totalNodes}")
     print("=" * 52)
 
-    if costo is None:
+    if minimizedCost is None:
         print("No se encontró solución")
         return
 
     print("Resultado de la Optimización:")
     print("=" * 52)
-    print(f"Costo Total: {costo}")
-    print(f"Costo nodos: {variablesDecision.get('nodesCost', 'N/A')}")
-    print(f"Costo enlaces: {variablesDecision.get('linksCost', 'N/A')}")
+    print(f"Costo Total: {minimizedCost}")
+    print(f"Costo nodos: {decisionVariables.get('nodesCost', 'N/A')}")
+    print(f"Costo enlaces: {decisionVariables.get('linksCost', 'N/A')}")
     print("=" * 52)
 
-    # Filtrar variables de decisión según prefijo
-    xVars = {var: val for var, val in variablesDecision.items() if var.startswith("x")}
-    yVars = {var: val for var, val in variablesDecision.items() if var.startswith("y")}
+    # Filtrar variables de decisión por prefijo
+    xVars = {var: val for var, val in decisionVariables.items() if var.startswith("x")}
+    yVars = {var: val for var, val in decisionVariables.items() if var.startswith("y")}
 
     # Procesar nodos activos
-    xactiveNodes = procesarVariablesActivas(xVars, cantidadNodos, "x")
+    xactiveNodes = procesarVariablesActivas(xVars, totalNodes, "x")
     if tipo == "hibrido":
-        yactiveNodes = procesarVariablesActivas(yVars, cantidadNodos, "y")
+        yactiveNodes = procesarVariablesActivas(yVars, totalNodes, "y")
 
-    # Crear tablas
+    # Mostrar tabla de nodos activos (x)
     columns_titles_x = ["Low Cost", "Mid Cost", "High Cost"]
-    row_index = [u + 1 for u in range(cantidadNodos)]
+    row_index = [u + 1 for u in range(totalNodes)]
     tablax = pd.DataFrame(xactiveNodes, columns=columns_titles_x, index=row_index)
     print("Nodos activos (x):")
     print(tablax)
     print("=" * 52)
 
+    # Mostrar tabla de nodos activos (y) si es modelo híbrido
     if tipo == "hibrido":
         columns_titles_y = [f"Subred {i}" for i in range(len(yactiveNodes[0]))]
         tablay = pd.DataFrame(yactiveNodes, columns=columns_titles_y, index=row_index)
@@ -50,13 +51,12 @@ def mostrarResultadosTabla(cantidadNodos, costo, variablesDecision, tipo="genera
         print(tablay)
         print("=" * 52)
 
-
 def procesarVariablesActivas(variables, cantidadNodos, prefix):
     """
     Procesa las variables activas para construir una lista de valores por nodo.
 
     Parámetros:
-    - variables (dict): Diccionario con las variables de decisión y sus valores.
+    - variables (dict): Variables de decisión y sus valores.
     - cantidadNodos (int): Número de nodos en el modelo.
     - prefix (str): Prefijo de las variables ("x" o "y").
 
