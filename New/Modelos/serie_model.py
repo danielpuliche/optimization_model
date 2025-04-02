@@ -72,8 +72,8 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
     # Agregar restricciones para la confiabilidad de los nodos
     for u in nodeSet:
         model.addConstr(
-            nodeReliability[u] == gp.quicksum(
-                (1 / reliabilityByNodeType[i]) * x[u, i] for i in nodesTypeSet
+            nodeReliability[u] == 1 / gp.quicksum(
+                reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
             ),
             name=f"NodeReliability_{u}"
         )
