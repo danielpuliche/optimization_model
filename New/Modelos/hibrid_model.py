@@ -44,45 +44,45 @@ def hibrid_model(baseModel, totalNodes, linkCost):
     nodeSet = range(totalNodes)
     subnetSet = range(totalNodes // 3 + 1)
     y = model.addVars(nodeSet, subnetSet, vtype=GRB.BINARY, name="y")
-    activeParallelSubnet = model.addVars(subnetSet, vtype=GRB.BINARY, name="alpha")
-    nodesParallelSubnet = model.addVars(subnetSet, vtype=GRB.INTEGER, name="p")
+    activeSubnet = model.addVars(subnetSet, vtype=GRB.BINARY, name="activeSubnet")
+    nodesBySubnet = model.addVars(subnetSet, vtype=GRB.INTEGER, name="p")
     parallelSubnetLinks = model.addVars(subnetSet, vtype=GRB.INTEGER, name="z")
-    totalSerieNodes = model.addVar(vtype=GRB.INTEGER, name="N_s")
 
     # Definiciones auxiliares
-    model.addConstr(totalSerieNodes == gp.quicksum(y[u, 0] for u in nodeSet), name="Ns_def")
-    model.addConstrs(
-        (nodesParallelSubnet[j] == gp.quicksum(y[u, j] for u in nodeSet) for j in subnetSet if j > 0),
-        name="p_def"
+    model.addConstrs( # Definición de nodos por subred
+        (nodesBySubnet[j] == gp.quicksum(y[u, j] for u in nodeSet) for j in subnetSet),
+        name="parallelNodesBySubnet_def"
     )
-    model.addConstrs(
-        (2 * parallelSubnetLinks[j] == nodesParallelSubnet[j] * (nodesParallelSubnet[j] - 1) for j in subnetSet if j > 0),
+    model.addConstrs( # Definición de enlaces paralelos por subred j > 0
+        (2 * parallelSubnetLinks[j] == nodesBySubnet[j] * (nodesBySubnet[j] - 1) for j in subnetSet if j > 0),
         name="Enlaces_Paralelo_Subred"
+    )
+    model.addConstrs( # Definición de subred activa
+        (activeSubnet[j] >= y[u, j] for u in nodeSet for j in subnetSet),
+        name="Activar_Subred"
     )
 
     # Restricciones
-    model.addConstrs(
+    model.addConstr(activeSubnet[0] == 1, name="Subred0_Min_1") # Subred 0 activa
+    model.addConstr(activeSubnet[1] == 1, name="Subred1_Min_1") # Subred 1 activa
+    model.addConstrs( # Cada nodo pertenece a una sola subred
         (gp.quicksum(y[u, j] for j in subnetSet) == 1 for u in nodeSet),
         name="Unicidad_Subred"
     )
-    model.addConstrs(
-        (activeParallelSubnet[j] >= y[u, j] for u in nodeSet for j in subnetSet if j > 0),
-        name="Activar_Subred"
-    )
-    model.addConstrs(
-        (gp.quicksum(y[u, j] for u in nodeSet) >= 3 * activeParallelSubnet[j] for j in subnetSet if j > 0),
+    model.addConstrs( # Las subredes paralelo activas deben tener al menos 3 nodos
+        (gp.quicksum(y[u, j] for u in nodeSet) >= 3 * activeSubnet[j] for j in subnetSet if j > 0),
         name="Subredes_Min_3"
     )
-    model.addConstr(
-        gp.quicksum(activeParallelSubnet[j] for j in subnetSet if j > 0) >= 1,
-        name="AlMenosUnaSubredActiva"
+    model.addConstr( # Al menos 2 subredes activas (subred serie y al menos una paralela)
+        gp.quicksum(activeSubnet[j] for j in subnetSet) >= 2,
+        name="AlMenosDosSubredesActivas"
     )
 
     # Cálculo del costo de enlaces
-    extraSubnetConnections = gp.quicksum(activeParallelSubnet[j] for j in subnetSet if j > 0)
+    extraSubnetConnections = gp.quicksum(activeSubnet[j] for j in subnetSet) - 1
     totalParallelSubnetLinks = gp.quicksum(parallelSubnetLinks[j] for j in subnetSet if j > 0)
     model.addConstr(
-        linksCost == linkCost * (totalSerieNodes + extraSubnetConnections + totalParallelSubnetLinks - 1),
+        linksCost == linkCost * (nodesBySubnet[0] + extraSubnetConnections + totalParallelSubnetLinks - 1),
         name="LinksCost_Hibrido"
     )
 
