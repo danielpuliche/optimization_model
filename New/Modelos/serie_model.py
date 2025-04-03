@@ -63,16 +63,16 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
 
     # Agregar variables para la confiabilidad de los nodos
     nodeReliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, lb=0.1, name="nodeReliability"
+        nodeSet, vtype=GRB.CONTINUOUS, lb=0.001, name="nodeReliability"
     )
     logNodeReliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, name="logNodeReliability"
+        nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeReliability"
     )
 
     # Agregar restricciones para la confiabilidad de los nodos
     for u in nodeSet:
         model.addConstr(
-            nodeReliability[u] == 1 / gp.quicksum(
+            nodeReliability[u] == gp.quicksum(
                 reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
             ),
             name=f"NodeReliability_{u}"
@@ -83,7 +83,7 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
 
     # Restricción para la confiabilidad total de la red
     model.addConstr(
-        -gp.quicksum(logNodeReliability[u] for u in nodeSet) >= math.log(requiredReliability),
+        gp.quicksum(logNodeReliability[u] for u in nodeSet) >= math.log(requiredReliability),
         name="TotalReliability"
     )
 
