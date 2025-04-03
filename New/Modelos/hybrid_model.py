@@ -8,7 +8,7 @@ import math
 # ============================================================
 # Función principal: hibrid_model
 # ============================================================
-def hibrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requiredReliability):
+def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requiredReliability):
     """
     Extiende el modelo base para incluir restricciones y costos del modelo híbrido.
 
@@ -113,7 +113,8 @@ def hibrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, require
         model.addConstr( # Definición de nodeUnreliability[u]
             nodeUnreliability[u] == 1 - gp.quicksum(
                 reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
-            ), name=f"NodeUnreliability_{u}"
+            ),
+            name=f"NodeUnreliability_{u}"
         )
         model.addGenConstrLog( # Definición de logNodeReliability[u]
             nodeReliability[u], logNodeReliability[u], name=f"LogNodeReliability_{u}"
