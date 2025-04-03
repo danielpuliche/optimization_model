@@ -2,6 +2,8 @@ import gurobipy as gp
 from gurobipy import GRB
 import math
 
+from utils.validation import validar_entrada
+
 def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requiredReliability):
     """
     Extiende el modelo base para incluir restricciones y costos del modelo en serie.
@@ -38,10 +40,7 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
     >>> print("Variables de decisión:", variables)
     """
     # Validación de entrada
-    if totalNodes < 4:
-        raise ValueError("El número de nodos debe ser al menos 4.")
-    if linkCost <= 0:
-        raise ValueError("El costo de un enlace debe ser mayor a 0.")
+    validar_entrada(totalNodes, linkCost, reliabilityByNodeType)
 
     # Copia del modelo base
     model = baseModel.copy()
