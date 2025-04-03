@@ -53,17 +53,17 @@ def parallel_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requi
     nodesTypeSet = range(len(reliabilityByNodeType))
 
     nodeUnreliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, lb=0.1, name="nodeUnreliability"
+        nodeSet, vtype=GRB.CONTINUOUS, name="nodeUnreliability"
     )
     logNodeUnreliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, name="logNodeUnreliability"
+        nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeUnreliability"
     )
 
     for u in nodeSet:
         model.addConstr(
-            nodeUnreliability[u] == 1 / (1 - gp.quicksum(
+            nodeUnreliability[u] == 1 - gp.quicksum(
                 reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
-            )),
+            ),
             name=f"NodeUnreliability_{u}"
         )
         model.addGenConstrLog(
@@ -72,7 +72,7 @@ def parallel_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requi
 
     # Restricción para la confiabilidad total de la red
     model.addConstr(
-        -gp.quicksum(logNodeUnreliability[u] for u in nodeSet) <= math.log(1 - requiredReliability),
+        gp.quicksum(logNodeUnreliability[u] for u in nodeSet) <= math.log(1 - requiredReliability),
         name="TotalReliability"
     )
 
