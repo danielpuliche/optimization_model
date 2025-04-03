@@ -6,19 +6,18 @@ from gurobipy import GRB
 import math
 
 from utils.validation import validar_entrada
+from config import LINK_COST, RELIABILITY_BY_NODE_TYPE  # Importar parámetros globales
 
 # ============================================================
 # Función principal: parallel_model
 # ============================================================
-def parallel_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requiredReliability):
+def parallel_model(baseModel, totalNodes, requiredReliability):
     """
     Extiende un modelo base para incluir restricciones y costos específicos del modelo paralelo.
 
     Parámetros:
     - baseModel (gurobipy.Model): Modelo base.
     - totalNodes (int): Número de nodos en la red (mínimo 4).
-    - linkCost (float): Costo de un enlace (> 0).
-    - reliabilityByNodeType (list[float]): Confiabilidad por tipo de nodo.
     - requiredReliability (float): Confiabilidad total requerida (0 < valor < 1).
 
     Retorna:
@@ -31,7 +30,7 @@ def parallel_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requi
     - Exception: Si no se encuentra una solución óptima.
     """
     # Validación de entrada
-    validar_entrada(totalNodes, linkCost, reliabilityByNodeType)
+    validar_entrada(totalNodes, LINK_COST, RELIABILITY_BY_NODE_TYPE)
 
     # Copia del modelo base
     model = baseModel.copy()
@@ -49,8 +48,9 @@ def parallel_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requi
 
     # Definir conjuntos de nodos y tipos de nodos
     nodeSet = range(totalNodes)
-    nodesTypeSet = range(len(reliabilityByNodeType))
+    nodesTypeSet = range(len(RELIABILITY_BY_NODE_TYPE))
 
+    # Agregar variables para la no confiabilidad de los nodos
     nodeUnreliability = model.addVars(
         nodeSet, vtype=GRB.CONTINUOUS, name="nodeUnreliability"
     )
@@ -61,7 +61,7 @@ def parallel_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requi
     for u in nodeSet:
         model.addConstr(
             nodeUnreliability[u] == 1 - gp.quicksum(
-                reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
+                RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet
             ),
             name=f"NodeUnreliability_{u}"
         )
@@ -82,7 +82,7 @@ def parallel_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requi
 
     # Agregar restricción específica del modelo paralelo
     model.addConstr(
-        linksCost == linkCost * (totalNodes * (totalNodes - 1)) / 2,
+        linksCost == LINK_COST * (totalNodes * (totalNodes - 1)) / 2,
         name="LinksCost_Paralelo"
     )
 

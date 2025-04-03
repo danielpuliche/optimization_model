@@ -1,13 +1,14 @@
 import gurobipy as gp
 from gurobipy import GRB
 
-def base_model(totalNodes, costByNodeType):
+from config import COST_BY_NODE_TYPE  # Importar parámetros globales desde config.py
+
+def base_model(totalNodes):
     """
     Crea un modelo base de optimización para desplegar nodos con diferentes costos.
 
     Parámetros:
     - totalNodes (int): Número de nodos a desplegar (mínimo 4).
-    - costByNodeType (dict): Costos asociados a cada tipo de nodo (0: Low, 1: Medium, 2: High).
 
     Retorna:
     - model (gurobipy.Model): Modelo base de Gurobi.
@@ -34,15 +35,15 @@ def base_model(totalNodes, costByNodeType):
     # Validación de entrada
     if totalNodes < 4:
         raise ValueError("El número de nodos debe ser al menos 4.")
-    if not isinstance(costByNodeType, dict) or len(costByNodeType) == 0:
-        raise ValueError("costByNodeType debe ser un diccionario con los costos de los nodos.")
+    if not isinstance(COST_BY_NODE_TYPE, dict) or len(COST_BY_NODE_TYPE) == 0:
+        raise ValueError("COST_BY_NODE_TYPE debe ser un diccionario con los costos de los nodos.")
 
     # Creación del modelo
     model = gp.Model(f"General_Model_{totalNodes}_Nodes")
 
     # Conjuntos
     nodesSet = range(totalNodes)
-    nodesTypeSet = range(len(costByNodeType))
+    nodesTypeSet = range(len(COST_BY_NODE_TYPE))
 
     # Variables
     x = model.addVars(nodesSet, nodesTypeSet, vtype=GRB.BINARY, name="x")
@@ -51,7 +52,7 @@ def base_model(totalNodes, costByNodeType):
 
     # Restricciones
     model.addConstr(
-        nodesCost == gp.quicksum(costByNodeType[i] * x[u, i] for u in nodesSet for i in nodesTypeSet),
+        nodesCost == gp.quicksum(COST_BY_NODE_TYPE[i] * x[u, i] for u in nodesSet for i in nodesTypeSet),
         name="NodesCost_def"
     )
     model.addConstr(linksCost == 0, name="LinksCost_General")

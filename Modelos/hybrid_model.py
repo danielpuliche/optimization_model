@@ -6,18 +6,19 @@ from gurobipy import GRB
 import math
 
 from utils.validation import validar_entrada
+from config import LINK_COST, RELIABILITY_BY_NODE_TYPE  # Importar parámetros globales
 
 # ============================================================
-# Función principal: hibrid_model
+# Función principal: hybrid_model
 # ============================================================
-def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requiredReliability):
+def hybrid_model(baseModel, totalNodes, requiredReliability):
     """
     Extiende el modelo base para incluir restricciones y costos del modelo híbrido.
 
     Parámetros:
     - baseModel (gurobipy.Model): Modelo base generado por base_model.
     - totalNodes (int): Número de nodos en la red (mínimo 4).
-    - linkCost (float): Costo de un enlace (debe ser mayor a 0).
+    - requiredReliability (float): Confiabilidad total requerida (0 < valor < 1).
 
     Retorna:
     - costo_total (float): Costo total de la solución.
@@ -25,14 +26,14 @@ def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, require
     - model (gurobipy.Model): Modelo optimizado.
     """
     # Validación de entrada
-    validar_entrada(totalNodes, linkCost, reliabilityByNodeType)
+    validar_entrada(totalNodes, LINK_COST, RELIABILITY_BY_NODE_TYPE)
 
     # Copia del modelo base
     model = baseModel.copy()
 
     nodeSet = range(totalNodes)
     subnetSet = range(totalNodes // 3 + 1)
-    nodesTypeSet = range(len(reliabilityByNodeType))
+    nodesTypeSet = range(len(RELIABILITY_BY_NODE_TYPE))
 
     # Recuperar la variable linksCost del modelo base
     linksCost = model.getVarByName("linksCost")
@@ -71,8 +72,8 @@ def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, require
     )
 
     # Restricciones
-    model.addConstr(gp.quicksum(y[u,0] for u in nodeSet) >= 1, name="Subred0") # Al menos un nodo en la subred serie
-    model.addConstr(gp.quicksum(y[u,1] for u in nodeSet) >= 3, name="Subred0") # Al menos 3 nodos en la subred paralela
+    model.addConstr(gp.quicksum(y[u, 0] for u in nodeSet) >= 1, name="Subred0") # Al menos un nodo en la subred serie
+    model.addConstr(gp.quicksum(y[u, 1] for u in nodeSet) >= 3, name="Subred1") # Al menos 3 nodos en la subred paralela
     model.addConstrs( # Cada nodo pertenece a una sola subred
         (gp.quicksum(y[u, j] for j in subnetSet) == 1 for u in nodeSet),
         name="Unicidad_Subred"
@@ -90,7 +91,7 @@ def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, require
     extraSubnetConnections = gp.quicksum(activeSubnet[j] for j in subnetSet) - 1
     totalParallelSubnetLinks = gp.quicksum(parallelSubnetLinks[j] for j in subnetSet if j > 0)
     model.addConstr(
-        linksCost == linkCost * (nodesBySubnet[0] + extraSubnetConnections + totalParallelSubnetLinks - 1),
+        linksCost == LINK_COST * (nodesBySubnet[0] + extraSubnetConnections + totalParallelSubnetLinks - 1),
         name="LinksCost_Hibrido"
     )
 
@@ -98,20 +99,20 @@ def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, require
 
     nodeReliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, name="nodeReliability")
     nodeUnreliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, name="nodeUnreliability")
-    logNodeReliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY,name="logNodeReliability")
-    logNodeUnreliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY,name="logNodeUnreliability")
-    logSubnetTotalReliability = model.addVars(subnetSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY,name="logSubnetTotalReliability")
+    logNodeReliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeReliability")
+    logNodeUnreliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeUnreliability")
+    logSubnetTotalReliability = model.addVars(subnetSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logSubnetTotalReliability")
 
     for u in nodeSet:
         model.addConstr( # Definición de nodeReliability[u]
             nodeReliability[u] == gp.quicksum(
-                reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
+                RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet
             ),
             name=f"NodeReliability_{u}"
         )
         model.addConstr( # Definición de nodeUnreliability[u]
             nodeUnreliability[u] == 1 - gp.quicksum(
-                reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
+                RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet
             ),
             name=f"NodeUnreliability_{u}"
         )
@@ -130,9 +131,9 @@ def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, require
             )
         else:
             subnetUnreliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"subnetUnreliability_{j}")
-            expSubnetUnreliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY ,name=f"expSubnetUnreliability_{j}")
-            subnetReliability = model.addVar(vtype=GRB.CONTINUOUS ,name=f"subnetReliability_{j}")
-            logSubnetReliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY ,name=f"logSubnetReliability_{j}")
+            expSubnetUnreliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"expSubnetUnreliability_{j}")
+            subnetReliability = model.addVar(vtype=GRB.CONTINUOUS, name=f"subnetReliability_{j}")
+            logSubnetReliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"logSubnetReliability_{j}")
 
             model.addConstr( # Definir subnetUnreliability
                 subnetUnreliability == gp.quicksum(y[u, j] * logNodeUnreliability[u] for u in nodeSet),
@@ -155,7 +156,7 @@ def hybrid_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, require
                 name=f"ParallelSubnetReliability_def_{j}"
             )
 
-    totalReliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY ,name="TotalReliability") # Restricción para la confiabilidad total de la red
+    totalReliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="TotalReliability") # Restricción para la confiabilidad total de la red
 
     model.addConstr( # Definición de totalReliability
         totalReliability == gp.quicksum(logSubnetTotalReliability[j] for j in subnetSet),

@@ -3,8 +3,9 @@ from gurobipy import GRB
 import math
 
 from utils.validation import validar_entrada
+from config import LINK_COST, RELIABILITY_BY_NODE_TYPE  # Importar parámetros globales
 
-def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, requiredReliability):
+def serie_model(baseModel, totalNodes, requiredReliability):
     """
     Extiende el modelo base para incluir restricciones y costos del modelo en serie.
 
@@ -16,9 +17,6 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
     ----------
     - baseModel (gurobipy.Model): Modelo base generado previamente.
     - totalNodes (int): Número de nodos en la red (mínimo 4).
-    - linkCost (float): Costo de un enlace (debe ser mayor a 0).
-    - reliabilityByNodeType (list[float]): Lista de confiabilidades por tipo de nodo.
-      Cada valor debe ser mayor a 0.
     - requiredReliability (float): Confiabilidad total requerida para la red (entre 0 y 1).
 
     Retorna:
@@ -31,16 +29,9 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
     ------------
     - ValueError: Si los parámetros de entrada no cumplen con las condiciones requeridas.
     - Exception: Si no se encuentra una solución óptima al modelo.
-
-    Ejemplo de uso:
-    ---------------
-    >>> base_model = crear_modelo_base()  # Función que genera el modelo base
-    >>> costo, variables, modelo = serie_model(base_model, 5, 10, [0.9, 0.8, 0.95], 0.7)
-    >>> print(f"Costo total: {costo}")
-    >>> print("Variables de decisión:", variables)
     """
     # Validación de entrada
-    validar_entrada(totalNodes, linkCost, reliabilityByNodeType)
+    validar_entrada(totalNodes, LINK_COST, RELIABILITY_BY_NODE_TYPE)
 
     # Copia del modelo base
     model = baseModel.copy()
@@ -58,7 +49,7 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
 
     # Definir conjuntos de nodos y tipos de nodos
     nodeSet = range(totalNodes)
-    nodesTypeSet = range(len(reliabilityByNodeType))
+    nodesTypeSet = range(len(RELIABILITY_BY_NODE_TYPE))
 
     # Agregar variables para la confiabilidad de los nodos
     nodeReliability = model.addVars(
@@ -72,7 +63,7 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
     for u in nodeSet:
         model.addConstr(
             nodeReliability[u] == gp.quicksum(
-                reliabilityByNodeType[i] * x[u, i] for i in nodesTypeSet
+                RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet
             ),
             name=f"NodeReliability_{u}"
         )
@@ -93,7 +84,7 @@ def serie_model(baseModel, totalNodes, linkCost, reliabilityByNodeType, required
 
     # Agregar restricción específica del modelo en serie
     model.addConstr(
-        linksCost == linkCost * (totalNodes - 1), name="LinksCost_Serie"
+        linksCost == LINK_COST * (totalNodes - 1), name="LinksCost_Serie"
     )
 
     # Optimizar el modelo
