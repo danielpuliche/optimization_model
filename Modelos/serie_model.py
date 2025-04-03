@@ -1,9 +1,11 @@
+# Importación de librerías
 import gurobipy as gp
 from gurobipy import GRB
 import math
 
+# Importación de utilidades y parámetros globales
 from utils.validation import validar_entrada
-from config import LINK_COST, RELIABILITY_BY_NODE_TYPE  # Importar parámetros globales
+from config import LINK_COST, RELIABILITY_BY_NODE_TYPE  # Costos y confiabilidades por tipo de nodo
 
 def serie_model(baseModel, totalNodes, requiredReliability):
     """
