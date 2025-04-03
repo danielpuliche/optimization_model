@@ -67,31 +67,33 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
         name="Enlaces_Paralelo_Subred"
     )
     model.addConstrs( # Definición de subred activa
-        (activeSubnet[j] >= y[u, j] for u in nodeSet for j in subnetSet),
+        (activeSubnet[j] >= gp.quicksum(y[u, j] for u in nodeSet) / len(nodeSet) for j in subnetSet),
         name="Activar_Subred"
     )
 
     # Restricciones
-    model.addConstr(gp.quicksum(y[u, 0] for u in nodeSet) >= 1, name="Subred0") # Al menos un nodo en la subred serie
-    model.addConstr(gp.quicksum(y[u, 1] for u in nodeSet) >= 3, name="Subred1") # Al menos 3 nodos en la subred paralela
     model.addConstrs( # Cada nodo pertenece a una sola subred
         (gp.quicksum(y[u, j] for j in subnetSet) == 1 for u in nodeSet),
         name="Unicidad_Subred"
-    )
-    model.addConstrs( # Las subredes paralelo activas deben tener al menos 3 nodos
-        (gp.quicksum(y[u, j] for u in nodeSet) >= 3 * activeSubnet[j] for j in subnetSet if j > 0),
-        name="Subredes_Min_3"
     )
     model.addConstr( # Al menos 2 subredes activas (subred serie y al menos una paralela)
         gp.quicksum(activeSubnet[j] for j in subnetSet) >= 2,
         name="AlMenosDosSubredesActivas"
     )
+    model.addConstrs( # Las subredes paralelo activas deben tener al menos 3 nodos
+        (nodesBySubnet[j] >= 3 * activeSubnet[j] for j in subnetSet if j > 0),
+        name="Subredes_Min_3"
+    )
+    model.addConstr( # La subred serie activa debe tener al menos 1 nodos
+        (nodesBySubnet[0] >= activeSubnet[0]),
+        name="Subred_Serie_Activa"
+    )
 
     # Cálculo del costo de enlaces
-    extraSubnetConnections = gp.quicksum(activeSubnet[j] for j in subnetSet) - 1
+    extraSubnetConnections = gp.quicksum(activeSubnet[j] for j in subnetSet if j > 0) - 1
     totalParallelSubnetLinks = gp.quicksum(parallelSubnetLinks[j] for j in subnetSet if j > 0)
     model.addConstr(
-        linksCost == LINK_COST * (nodesBySubnet[0] + extraSubnetConnections + totalParallelSubnetLinks - 1),
+        linksCost == LINK_COST * (nodesBySubnet[0] + extraSubnetConnections + totalParallelSubnetLinks),
         name="LinksCost_Hibrido"
     )
 
