@@ -76,8 +76,8 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
         (gp.quicksum(y[u, j] for j in subnetSet) == 1 for u in nodeSet),
         name="Unicidad_Subred"
     )
-    model.addConstr( # Al menos 2 subredes activas (subred serie y al menos una paralela)
-        gp.quicksum(activeSubnet[j] for j in subnetSet) >= 2,
+    model.addConstr( # Al menos una subred activa
+        gp.quicksum(activeSubnet[j] for j in subnetSet) >= 1,
         name="AlMenosDosSubredesActivas"
     )
     model.addConstrs( # Las subredes paralelo activas deben tener al menos 3 nodos
@@ -105,7 +105,7 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
     logNodeUnreliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeUnreliability")
     logSubnetTotalReliability = model.addVars(subnetSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logSubnetTotalReliability")
 
-    for u in nodeSet:
+    for u in nodeSet: # Definición de confiabilidad e inconfiabilidad de los nodos
         model.addConstr( # Definición de nodeReliability[u]
             nodeReliability[u] == gp.quicksum(
                 RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet
@@ -125,13 +125,13 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
             nodeUnreliability[u], logNodeUnreliability[u], name=f"LogNodeUnreliability_{u}"
         )
 
-    for j in subnetSet:
-        if j == 0:
+    for j in subnetSet: # Definición de confiabilidad por subredes
+        if j == 0: # confiabilidad de la subred serie
             model.addConstr( # Definición de la confiabilidad de la subred serie
                 logSubnetTotalReliability[0] == gp.quicksum(y[u, 0] * logNodeReliability[u] for u in nodeSet),
                 name=f"SerieSubnetReliability_def_0"
             )
-        else:
+        else: # confiabilidad de las subredes paralelas
             subnetUnreliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"subnetUnreliability_{j}")
             expSubnetUnreliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"expSubnetUnreliability_{j}")
             subnetReliability = model.addVar(vtype=GRB.CONTINUOUS, name=f"subnetReliability_{j}")
@@ -180,4 +180,5 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
         variables_decision = {var.varName: var.x for var in model.getVars()}
         return model.objVal, variables_decision, model
     else:
-        raise Exception("No se encontró una solución óptima.")
+        print("No se encontró una solución óptima.")
+        return None, None, model

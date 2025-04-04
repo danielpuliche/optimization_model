@@ -138,11 +138,31 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
     >>> graficar_costos_minimizados([0.6, 0.7, 0.8], [100, 120, 150])
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(requiredReliabilities, serieMinimizedCosts, linestyle='-', color='b', marker='o')
+    plt.plot(requiredReliabilities, serieMinimizedCosts, linestyle='-', color='b', marker='.')
     plt.title('Costos Minimizados vs Fiabilidad Requerida')
     plt.xlabel('Fiabilidad Requerida')
     plt.ylabel('Costos Minimizados')
     plt.grid(True)
+
+    # Añadir un label para el último valor
+    searchIndex = -1
+    isYValueValide = False
+    while not isYValueValide:
+        last_x = requiredReliabilities[searchIndex]
+        last_y = serieMinimizedCosts[searchIndex]
+        if last_y is not None:
+            isYValueValide = True
+        else:
+            searchIndex -= 1
+
+    first_x = requiredReliabilities[0]
+    first_y = serieMinimizedCosts[0]
+
+    plt.text(last_x, last_y, f'({last_x:.8f}, {last_y:.2f})', fontsize=10,
+             ha='left', va='bottom', color='blue')
+    plt.text(first_x, first_y, f'({first_x:.8f}, {first_y:.2f})', fontsize=10,
+             ha='left', va='bottom', color='blue')
+
     plt.show()
 
 
@@ -247,9 +267,9 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
             posiciones.append(x)
 
             l, m, h = item["low"], item["medium"], item["high"]
-            ax.bar(x, l, bar_width, color=colores["low"])
-            ax.bar(x, m, bar_width, bottom=l, color=colores["medium"])
-            ax.bar(x, h, bar_width, bottom=l + m, color=colores["high"])
+            ax.bar(x, l, bar_width, color=colores["low"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, m, bar_width, bottom=l, color=colores["medium"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, h, bar_width, bottom=l + m, color=colores["high"], edgecolor='black', linewidth=0.8)
 
             for height, y0, text in [(l, 0, l), (m, l, m), (h, l + m, h)]:
                 if height > 0:
@@ -260,19 +280,21 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
         i * espacio_entre_grupos + (len(agrupados[conf]) - 1) * bar_width / 2
         for i, conf in enumerate(sorted(agrupados.keys()))
     ]
-    xtick_labels = [f'{int(conf*100)}%' for conf in sorted(agrupados.keys())]
+    xtick_labels = [f'{round(conf*100, 10)}%' for conf in sorted(agrupados.keys())]
 
-    ax.set_xticks(xtick_positions)
+    ax.set_xticks(xtick_positions)  # Centrar las etiquetas en el grupo
     ax.set_xticklabels(xtick_labels)
     ax.set_ylabel('Cantidad de nodos')
     ax.set_xlabel('Confiabilidad')
     ax.set_title('Distribución de Nodos por Confiabilidad')
     ax.legend(handles=[
-        plt.Rectangle((0, 0), 1, 1, color=colores["low"], label='Low'),
-        plt.Rectangle((0, 0), 1, 1, color=colores["medium"], label='Medium'),
-        plt.Rectangle((0, 0), 1, 1, color=colores["high"], label='High'),
+        plt.Rectangle((0, 0), 1, 1, color=colores["low"], label='Low', edgecolor='black', linewidth=0.8),
+        plt.Rectangle((0, 0), 1, 1, color=colores["medium"], label='Medium', edgecolor='black', linewidth=0.8),
+        plt.Rectangle((0, 0), 1, 1, color=colores["high"], label='High', edgecolor='black', linewidth=0.8),
     ], title="Node Type")
 
     ax.grid(True, axis='y', linestyle='--', alpha=0.6)
+    ax.set_yticks(range(0, max(cantidades_nodos) + 2, 1))  # Saltos en y de 1 en 1
+    plt.ylim(0, max(cantidades_nodos) + 1)
     plt.tight_layout()
     plt.show()

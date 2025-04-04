@@ -94,4 +94,5 @@ def parallel_model(baseModel, totalNodes, requiredReliability):
         variables_decision = {var.varName: var.x for var in model.getVars()}
         return model.objVal, variables_decision, model
     else:
-        raise Exception("No se encontró una solución óptima.")
+        print("No se encontró una solución óptima.")
+        return None, None, model

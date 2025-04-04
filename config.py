@@ -12,4 +12,7 @@ RELIABILITY_BY_NODE_TYPE = [0.9, 0.95, 0.99]
 LINK_COST = 10
 
 # Número de valores equidistantes para confiabilidades requeridas
-NUM_EQUIDISTANT_VALUES = 50
+NUM_EQUIDISTANT_VALUES = 200
+
+# Confiabilidad máxima
+MAX_RELIABILITY = 0.9999999
