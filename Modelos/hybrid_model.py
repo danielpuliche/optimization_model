@@ -66,10 +66,12 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
         (2 * parallelSubnetLinks[j] == nodesBySubnet[j] * (nodesBySubnet[j] - 1) for j in subnetSet if j > 0),
         name="Enlaces_Paralelo_Subred"
     )
-    model.addConstrs( # Definición de subred activa
-        (activeSubnet[j] >= gp.quicksum(y[u, j] for u in nodeSet) / len(nodeSet) for j in subnetSet),
-        name="Activar_Subred"
-    )
+    for j in subnetSet: # Definición de activeSubnet
+        # Restricción 1: Si nodesBySubnet[j] > 0, entonces activeSubnet[j] = 1
+        model.addConstr(nodesBySubnet[j] <= 100 * activeSubnet[j])
+
+        # Restricción 2: Si nodesBySubnet[j] = 0, entonces activeSubnet[j] = 0
+        model.addConstr(nodesBySubnet[j] >= activeSubnet[j])
 
     # Restricciones
     model.addConstrs( # Cada nodo pertenece a una sola subred
