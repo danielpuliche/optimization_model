@@ -6,10 +6,10 @@ COST_BY_NODE_TYPE = {
 }
 
 # Confiabilidad por tipo de nodo (Low, Medium, High)
-RELIABILITY_BY_NODE_TYPE = [0.6, 0.7, 0.8]
+RELIABILITY_BY_NODE_TYPE = [0.9, 0.95, 0.99]
 
 # Costo de un enlace
 LINK_COST = 10
 
 # Número de valores equidistantes para confiabilidades requeridas
-NUM_EQUIDISTANT_VALUES = 20
+NUM_EQUIDISTANT_VALUES = 50

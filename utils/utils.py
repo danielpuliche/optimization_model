@@ -138,15 +138,11 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
     >>> graficar_costos_minimizados([0.6, 0.7, 0.8], [100, 120, 150])
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(requiredReliabilities, serieMinimizedCosts,
-             marker='o', linestyle='-', color='b')
+    plt.plot(requiredReliabilities, serieMinimizedCosts, linestyle='-', color='b', marker='o')
     plt.title('Costos Minimizados vs Fiabilidad Requerida')
     plt.xlabel('Fiabilidad Requerida')
     plt.ylabel('Costos Minimizados')
     plt.grid(True)
-    for x, y in zip(requiredReliabilities, serieMinimizedCosts):
-        plt.text(x, y, f'x = {x:.2f}\ny = {y:.2f}',
-                 fontsize=9, ha='right', va='bottom')
     plt.show()
 
 
@@ -176,12 +172,11 @@ def graficar_costos_totales(confiabilidades, cantidades_nodos, costos_totales):
     plt.figure(figsize=(12, 6))
 
     for conf, costos in costos_por_confiabilidad.items():
-        plt.plot(cantidades_nodos, costos, marker='o',
-                 label=f'Confiabilidad: {conf:.2e}')
+        plt.plot(cantidades_nodos, costos, marker='o', label=f'Confiabilidad: {conf}')
 
-    plt.yscale('log')
+    # plt.yscale('log')
     plt.xlabel('Cantidad de Nodos')
-    plt.ylabel('Costo Total (escala logarítmica)')
+    plt.ylabel('Costo Total')
     plt.title('Costo vs Cantidad de Nodos para Diferentes Confiabilidades')
     plt.grid(True)
     plt.legend()
