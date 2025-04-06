@@ -2,6 +2,7 @@ from collections import defaultdict
 from itertools import product
 import pandas as pd
 import re
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -122,11 +123,12 @@ def generate_equidistant_list(start, end, num_elements):
     step = (end - start) / (num_elements + 1)
     result = []
     for i in range(1, num_elements+1):
-        result.append(round(start + i * step, 12))
+        result.append(start + i * step)
     return result
 
+# -----------------------graficas------------------------------------------
 
-def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
+def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts, topology, totalNodes):
     """
     Genera un gráfico de costos minimizados en función de la fiabilidad requerida.
 
@@ -139,9 +141,9 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
     """
     plt.figure(figsize=(10, 6))
     plt.plot(requiredReliabilities, serieMinimizedCosts, linestyle='-', color='b', marker='.')
-    plt.title('Costos Minimizados vs Fiabilidad Requerida')
-    plt.xlabel('Fiabilidad Requerida')
-    plt.ylabel('Costos Minimizados')
+    plt.title(f'Minimized Costs vs Required Reliability - {topology} Topology - {totalNodes} Nodes')
+    plt.xlabel('Required Reliability')
+    plt.ylabel('Minimized Costs')
     plt.grid(True)
 
     # Añadir un label para el último valor
@@ -163,12 +165,16 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
     plt.text(first_x, first_y, f'({first_x:.8f}, {first_y:.2f})', fontsize=10,
              ha='left', va='bottom', color='blue')
 
-    plt.show()
+    directory = f"graficas/{topology}"
+    fileName = f"costVsReliability_{topology}_{totalNodes}.png"
 
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-# -----------------------graficas------------------------------------------
+    plt.savefig(os.path.join(directory, fileName))
+    # plt.show()
+
 # grafica lineas
-
 
 def graficar_costos_totales(confiabilidades, cantidades_nodos, costos_totales):
     """
@@ -195,17 +201,15 @@ def graficar_costos_totales(confiabilidades, cantidades_nodos, costos_totales):
         plt.plot(cantidades_nodos, costos, marker='o', label=f'Confiabilidad: {conf}')
 
     # plt.yscale('log')
-    plt.xlabel('Cantidad de Nodos')
-    plt.ylabel('Costo Total')
+    plt.xlabel('Nodes Count')
+    plt.ylabel('Minimized Costs')
     plt.title('Costo vs Cantidad de Nodos para Diferentes Confiabilidades')
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     plt.show()
 
-
 # -------grafica barras
-
 
 def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_sets):
     """
