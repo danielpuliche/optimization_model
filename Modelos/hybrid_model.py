@@ -66,12 +66,10 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
         (2 * parallelSubnetLinks[j] == nodesBySubnet[j] * (nodesBySubnet[j] - 1) for j in subnetSet if j > 0),
         name="Enlaces_Paralelo_Subred"
     )
-    for j in subnetSet: # Definición de activeSubnet
-        # Restricción 1: Si nodesBySubnet[j] > 0, entonces activeSubnet[j] = 1
-        model.addConstr(nodesBySubnet[j] <= 100 * activeSubnet[j])
-
-        # Restricción 2: Si nodesBySubnet[j] = 0, entonces activeSubnet[j] = 0
-        model.addConstr(nodesBySubnet[j] >= activeSubnet[j])
+    model.addConstr( # Definición de enlaces paralelos por subred j = 0
+        parallelSubnetLinks[0] == 0,
+        name="Enlaces_Paralelo_Subred_Serie"
+    )
 
     # Restricciones
     model.addConstrs( # Cada nodo pertenece a una sola subred
@@ -86,10 +84,20 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
         (nodesBySubnet[j] >= 3 * activeSubnet[j] for j in subnetSet if j > 0),
         name="Subredes_Min_3"
     )
-    model.addConstr( # La subred serie activa debe tener al menos 1 nodos
-        (nodesBySubnet[0] >= activeSubnet[0]),
-        name="Subred_Serie_Activa"
+
+    # model.addConstr( # La subred serie activa debe tener al menos 1 nodos
+    #     (nodesBySubnet[0] >= activeSubnet[0]),
+    #     name="Subred_Serie_Activa"
+    # )
+
+    model.addConstr( # La suma de nodos asignados a subredes activas debe ser igual al total de nodos
+        (gp.quicksum(activeSubnet[j]*nodesBySubnet[j] for j in subnetSet) == totalNodes),
+        name="Total_Nodos_Asignados"
     )
+    # model.addConstr( # La subred serie siempre activa
+    #     activeSubnet[0] == 1,
+    #     name="Subred_Serie_Activa_2"
+    # )
 
     # Cálculo del costo de enlaces
     extraSubnetConnections = gp.quicksum(activeSubnet[j] for j in subnetSet if j > 0) - 1
@@ -147,7 +155,7 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
                 name=f"expSubnetUnreliability_{j}"
             )
             model.addConstr( # Definición de subnetReliability
-                subnetReliability == 1 - expSubnetUnreliability,
+                subnetReliability == 1 - (activeSubnet[j]*expSubnetUnreliability),
                 name=f"SubnetReliability_{j}"
             )
             model.addGenConstrLog( # Definir relación del log(1-exp(K_j))
