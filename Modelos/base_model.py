@@ -3,7 +3,9 @@ import gurobipy as gp
 from gurobipy import GRB
 
 # Importación de parámetros globales
-from config import COST_BY_NODE_TYPE  # Diccionario con los costos por tipo de nodo
+# Diccionario con los costos por tipo de nodo
+from config import COST_BY_NODE_TYPE
+
 
 def base_model(totalNodes):
     """
@@ -38,7 +40,8 @@ def base_model(totalNodes):
     if totalNodes < 4:
         raise ValueError("El número de nodos debe ser al menos 4.")
     if not isinstance(COST_BY_NODE_TYPE, dict) or len(COST_BY_NODE_TYPE) == 0:
-        raise ValueError("COST_BY_NODE_TYPE debe ser un diccionario con los costos de los nodos.")
+        raise ValueError(
+            "COST_BY_NODE_TYPE debe ser un diccionario con los costos de los nodos.")
 
     # Creación del modelo
     model = gp.Model(f"General_Model_{totalNodes}_Nodes")
@@ -48,14 +51,18 @@ def base_model(totalNodes):
     nodesTypeSet = range(len(COST_BY_NODE_TYPE))  # Conjunto de tipos de nodos
 
     # Definición de variables
-    x = model.addVars(nodesSet, nodesTypeSet, vtype=GRB.BINARY, name="x")  # Variables binarias
-    nodesCost = model.addVar(vtype=GRB.CONTINUOUS, name="nodesCost")  # Costo total de los nodos
-    linksCost = model.addVar(vtype=GRB.CONTINUOUS, name="linksCost")  # Costo total de los enlaces
+    x = model.addVars(nodesSet, nodesTypeSet, vtype=GRB.BINARY,
+                      name="x")  # Variables binarias
+    # Costo total de los nodos
+    nodesCost = model.addVar(vtype=GRB.CONTINUOUS, name="nodesCost")
+    # Costo total de los enlaces
+    linksCost = model.addVar(vtype=GRB.CONTINUOUS, name="linksCost")
 
     # Restricciones
     # Restricción 1: Definición del costo total de los nodos
     model.addConstr(
-        nodesCost == gp.quicksum(COST_BY_NODE_TYPE[i] * x[u, i] for u in nodesSet for i in nodesTypeSet),
+        nodesCost == gp.quicksum(
+            COST_BY_NODE_TYPE[i] * x[u, i] for u in nodesSet for i in nodesTypeSet),
         name="NodesCost_def"
     )
 

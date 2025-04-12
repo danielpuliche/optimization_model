@@ -6,11 +6,14 @@ from gurobipy import GRB
 import math
 
 from utils.validation import validar_entrada
-from config import LINK_COST, RELIABILITY_BY_NODE_TYPE  # Importar parámetros globales
+# Importar parámetros globales
+from config import LINK_COST, RELIABILITY_BY_NODE_TYPE
 
 # ============================================================
 # Función principal: parallel_model
 # ============================================================
+
+
 def parallel_model(baseModel, totalNodes, requiredReliability):
     """
     Extiende un modelo base para incluir restricciones y costos específicos del modelo paralelo.
@@ -38,7 +41,8 @@ def parallel_model(baseModel, totalNodes, requiredReliability):
     # Recuperar la variable linksCost del modelo base
     linksCost = model.getVarByName("linksCost")
     if linksCost is None:
-        raise ValueError("No se encontró la variable linksCost en el modelo base.")
+        raise ValueError(
+            "No se encontró la variable linksCost en el modelo base.")
 
     # Recuperar las variables de decisión x[u, i]
     x = {
@@ -66,12 +70,14 @@ def parallel_model(baseModel, totalNodes, requiredReliability):
             name=f"NodeUnreliability_{u}"
         )
         model.addGenConstrLog(
-            nodeUnreliability[u], logNodeUnreliability[u], name=f"LogNodeUnreliability_{u}"
+            nodeUnreliability[u], logNodeUnreliability[
+                u], name=f"LogNodeUnreliability_{u}"
         )
 
     # Restricción para la confiabilidad total de la red
     model.addConstr(
-        gp.quicksum(logNodeUnreliability[u] for u in nodeSet) <= math.log(1 - requiredReliability),
+        gp.quicksum(logNodeUnreliability[u] for u in nodeSet) <= math.log(
+            1 - requiredReliability),
         name="TotalReliability"
     )
 
@@ -94,4 +100,4 @@ def parallel_model(baseModel, totalNodes, requiredReliability):
         variables_decision = {var.varName: var.x for var in model.getVars()}
         return model.objVal, variables_decision, model
     else:
-        raise Exception("No se encontró una solución óptima.")
+        return None, None, model
