@@ -2,6 +2,7 @@ from collections import defaultdict
 from itertools import product
 import pandas as pd
 import re
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -122,11 +123,18 @@ def generate_equidistant_list(start, end, num_elements):
     step = (end - start) / (num_elements + 1)
     result = []
     for i in range(1, num_elements+1):
-        result.append(round(start + i * step, 12))
+        result.append(start + i * step)
     return result
 
+<<<<<<< HEAD
 
 def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
+=======
+# -----------------------graficas------------------------------------------
+
+
+def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts, topology, totalNodes):
+>>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
     """
     Genera un gráfico de costos minimizados en función de la fiabilidad requerida.
 
@@ -139,6 +147,7 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
     """
     plt.figure(figsize=(10, 6))
     plt.plot(requiredReliabilities, serieMinimizedCosts,
+<<<<<<< HEAD
              marker='o', linestyle='-', color='b')
     plt.title('Costos Minimizados vs Fiabilidad Requerida')
     plt.xlabel('Fiabilidad Requerida')
@@ -151,6 +160,43 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts):
 
 
 # -----------------------graficas------------------------------------------
+=======
+             linestyle='-', color='b', marker='.')
+    plt.title(
+        f'Minimized Costs vs Required Reliability - {topology} Topology - {totalNodes} Nodes')
+    plt.xlabel('Required Reliability')
+    plt.ylabel('Minimized Costs')
+    plt.grid(True)
+
+    # Añadir un label para el último valor
+    searchIndex = -1
+    isYValueValide = False
+    while not isYValueValide:
+        last_x = requiredReliabilities[searchIndex]
+        last_y = serieMinimizedCosts[searchIndex]
+        if last_y is not None:
+            isYValueValide = True
+        else:
+            searchIndex -= 1
+
+    first_x = requiredReliabilities[0]
+    first_y = serieMinimizedCosts[0]
+
+    plt.text(last_x, last_y, f'({last_x:.8f}, {last_y:.2f})', fontsize=10,
+             ha='left', va='bottom', color='blue')
+    plt.text(first_x, first_y, f'({first_x:.8f}, {first_y:.2f})', fontsize=10,
+             ha='left', va='bottom', color='blue')
+
+    directory = f"graficas/{topology}"
+    fileName = f"costVsReliability_{topology}_{totalNodes}.png"
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    plt.savefig(os.path.join(directory, fileName))
+    # plt.show()
+
+>>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
 # grafica lineas
 
 
@@ -177,18 +223,29 @@ def graficar_costos_totales(confiabilidades, cantidades_nodos, costos_totales):
 
     for conf, costos in costos_por_confiabilidad.items():
         plt.plot(cantidades_nodos, costos, marker='o',
+<<<<<<< HEAD
                  label=f'Confiabilidad: {conf:.2e}')
 
     plt.yscale('log')
     plt.xlabel('Cantidad de Nodos')
     plt.ylabel('Costo Total (escala logarítmica)')
+=======
+                 label=f'Confiabilidad: {conf}')
+
+    # plt.yscale('log')
+    plt.xlabel('Nodes Count')
+    plt.ylabel('Minimized Costs')
+>>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
     plt.title('Costo vs Cantidad de Nodos para Diferentes Confiabilidades')
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     plt.show()
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
 # -------grafica barras
 
 
@@ -252,9 +309,18 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
             posiciones.append(x)
 
             l, m, h = item["low"], item["medium"], item["high"]
+<<<<<<< HEAD
             ax.bar(x, l, bar_width, color=colores["low"])
             ax.bar(x, m, bar_width, bottom=l, color=colores["medium"])
             ax.bar(x, h, bar_width, bottom=l + m, color=colores["high"])
+=======
+            ax.bar(x, l, bar_width,
+                   color=colores["low"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, m, bar_width, bottom=l,
+                   color=colores["medium"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, h, bar_width, bottom=l + m,
+                   color=colores["high"], edgecolor='black', linewidth=0.8)
+>>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
 
             for height, y0, text in [(l, 0, l), (m, l, m), (h, l + m, h)]:
                 if height > 0:
@@ -265,19 +331,41 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
         i * espacio_entre_grupos + (len(agrupados[conf]) - 1) * bar_width / 2
         for i, conf in enumerate(sorted(agrupados.keys()))
     ]
+<<<<<<< HEAD
     xtick_labels = [f'{int(conf*100)}%' for conf in sorted(agrupados.keys())]
 
     ax.set_xticks(xtick_positions)
+=======
+    xtick_labels = [
+        f'{round(conf*100, 10)}%' for conf in sorted(agrupados.keys())]
+
+    ax.set_xticks(xtick_positions)  # Centrar las etiquetas en el grupo
+>>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
     ax.set_xticklabels(xtick_labels)
     ax.set_ylabel('Cantidad de nodos')
     ax.set_xlabel('Confiabilidad')
     ax.set_title('Distribución de Nodos por Confiabilidad')
     ax.legend(handles=[
+<<<<<<< HEAD
         plt.Rectangle((0, 0), 1, 1, color=colores["low"], label='Low'),
         plt.Rectangle((0, 0), 1, 1, color=colores["medium"], label='Medium'),
         plt.Rectangle((0, 0), 1, 1, color=colores["high"], label='High'),
     ], title="Node Type")
 
     ax.grid(True, axis='y', linestyle='--', alpha=0.6)
+=======
+        plt.Rectangle(
+            (0, 0), 1, 1, color=colores["low"], label='Low', edgecolor='black', linewidth=0.8),
+        plt.Rectangle(
+            (0, 0), 1, 1, color=colores["medium"], label='Medium', edgecolor='black', linewidth=0.8),
+        plt.Rectangle(
+            (0, 0), 1, 1, color=colores["high"], label='High', edgecolor='black', linewidth=0.8),
+    ], title="Node Type")
+
+    ax.grid(True, axis='y', linestyle='--', alpha=0.6)
+    # Saltos en y de 1 en 1
+    ax.set_yticks(range(0, max(cantidades_nodos) + 2, 1))
+    plt.ylim(0, max(cantidades_nodos) + 1)
+>>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
     plt.tight_layout()
     plt.show()
