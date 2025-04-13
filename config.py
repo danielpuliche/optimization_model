@@ -17,11 +17,7 @@ RELIABILITY_BY_NODE_TYPE = [0.9, 0.95, 0.99]
 LINK_COST = 7.69 if EVALUATION_YEAR else 3.41
 
 # Número de valores equidistantes para confiabilidades requeridas
-<<<<<<< HEAD
-NUM_EQUIDISTANT_VALUES = 20
-=======
 NUM_EQUIDISTANT_VALUES = 200
 
 # Confiabilidad máxima
 MAX_RELIABILITY = 0.9999999999999999
->>>>>>> 386b541ee1d4ee08edf77d8bf8aed8d9dab08e4a
