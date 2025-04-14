@@ -57,22 +57,17 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
 
     # Variables adicionales
     y = model.addVars(nodeSet, subnetSet, vtype=GRB.BINARY, name="y")
-    activeSubnet = model.addVars(
-        subnetSet, vtype=GRB.BINARY, name="activeSubnet")
-    nodesBySubnet = model.addVars(
-        subnetSet, vtype=GRB.INTEGER, name="nodesBySubnet")
-    parallelSubnetLinks = model.addVars(
-        subnetSet, vtype=GRB.INTEGER, name="parallelSubnetLinks")
+    activeSubnet = model.addVars(subnetSet, vtype=GRB.BINARY, name="activeSubnet")
+    nodesBySubnet = model.addVars(subnetSet, vtype=GRB.INTEGER, name="nodesBySubnet")
+    parallelSubnetLinks = model.addVars(subnetSet, vtype=GRB.INTEGER, name="parallelSubnetLinks")
 
     # Definiciones auxiliares
     model.addConstrs(  # Definición de nodos por subred
-        (nodesBySubnet[j] == gp.quicksum(y[u, j]
-         for u in nodeSet) for j in subnetSet),
+        (nodesBySubnet[j] == gp.quicksum(y[u, j] for u in nodeSet) for j in subnetSet),
         name="parallelNodesBySubnet_def"
     )
     model.addConstrs(  # Definición de enlaces paralelos por subred j > 0
-        (2 * parallelSubnetLinks[j] == nodesBySubnet[j] *
-         (nodesBySubnet[j] - 1) for j in subnetSet if j > 0),
+        (2 * parallelSubnetLinks[j] == nodesBySubnet[j] * (nodesBySubnet[j] - 1) for j in subnetSet if j > 0),
         name="Enlaces_Paralelo_Subred"
     )
     model.addConstr( # Definición de enlaces paralelos por subred j = 0
@@ -93,102 +88,43 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
         (nodesBySubnet[j] >= 3 * activeSubnet[j] for j in subnetSet if j > 0),
         name="Subredes_Min_3"
     )
-
-    # model.addConstr( # La subred serie activa debe tener al menos 1 nodos
-    #     (nodesBySubnet[0] >= activeSubnet[0]),
-    #     name="Subred_Serie_Activa"
-    # )
-
     model.addConstr( # La suma de nodos asignados a subredes activas debe ser igual al total de nodos
         (gp.quicksum(activeSubnet[j]*nodesBySubnet[j] for j in subnetSet) == totalNodes),
         name="Total_Nodos_Asignados"
     )
-    # model.addConstr( # La subred serie siempre activa
-    #     activeSubnet[0] == 1,
-    #     name="Subred_Serie_Activa_2"
-    # )
 
     # Cálculo del costo de enlaces
     extraSubnetConnections = gp.quicksum(activeSubnet[j] for j in subnetSet if j > 0) - 1
     totalParallelSubnetLinks = gp.quicksum(parallelSubnetLinks[j] for j in subnetSet if j > 0)
-    model.addConstr(  # Definición de enlaces paralelos por subred j = 0
-        parallelSubnetLinks[0] == 0,
-        name="Enlaces_Paralelo_Subred_Serie"
-    )
-
-    # Restricciones
-    model.addConstrs(  # Cada nodo pertenece a una sola subred
-        (gp.quicksum(y[u, j] for j in subnetSet) == 1 for u in nodeSet),
-        name="Unicidad_Subred"
-    )
-    model.addConstr(  # Al menos una subred activa
-        gp.quicksum(activeSubnet[j] for j in subnetSet) >= 1,
-        name="AlMenosDosSubredesActivas"
-    )
-    model.addConstrs(  # Las subredes paralelo activas deben tener al menos 3 nodos
-        (nodesBySubnet[j] >= 3 * activeSubnet[j] for j in subnetSet if j > 0),
-        name="Subredes_Min_3"
-    )
-
-    # model.addConstr( # La subred serie activa debe tener al menos 1 nodos
-    #     (nodesBySubnet[0] >= activeSubnet[0]),
-    #     name="Subred_Serie_Activa"
-    # )
-
-    model.addConstr(  # La suma de nodos asignados a subredes activas debe ser igual al total de nodos
-        (gp.quicksum(activeSubnet[j]*nodesBySubnet[j]
-         for j in subnetSet) == totalNodes),
-        name="Total_Nodos_Asignados"
-    )
-    # model.addConstr( # La subred serie siempre activa
-    #     activeSubnet[0] == 1,
-    #     name="Subred_Serie_Activa_2"
-    # )
-
-    # Cálculo del costo de enlaces
-    extraSubnetConnections = gp.quicksum(
-        activeSubnet[j] for j in subnetSet if j > 0) - 1
-    totalParallelSubnetLinks = gp.quicksum(
-        parallelSubnetLinks[j] for j in subnetSet if j > 0)
     model.addConstr(
-        linksCost == LINK_COST *
-        (nodesBySubnet[0] + extraSubnetConnections + totalParallelSubnetLinks),
+        linksCost == LINK_COST * (nodesBySubnet[0] + extraSubnetConnections + totalParallelSubnetLinks),
         name="LinksCost_Hibrido"
     )
 
     ############################ CONFIABILIDAD ############################
 
-    nodeReliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, name="nodeReliability")
-    nodeUnreliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, name="nodeUnreliability")
-    logNodeReliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeReliability")
-    logNodeUnreliability = model.addVars(
-        nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeUnreliability")
-    logSubnetTotalReliability = model.addVars(
-        subnetSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logSubnetTotalReliability")
+    nodeReliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, name="nodeReliability")
+    nodeUnreliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, name="nodeUnreliability")
+    logNodeReliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeReliability")
+    logNodeUnreliability = model.addVars(nodeSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logNodeUnreliability")
+    logSubnetTotalReliability = model.addVars(subnetSet, vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="logSubnetTotalReliability")
 
     for u in nodeSet: # Definición de confiabilidad e inconfiabilidad de los nodos
         model.addConstr( # Definición de nodeReliability[u]
-            nodeReliability[u] == gp.quicksum(
-                RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet
-            ),
+            nodeReliability[u] == gp.quicksum(RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet),
             name=f"NodeReliability_{u}"
         )
         model.addConstr(  # Definición de nodeUnreliability[u]
-            nodeUnreliability[u] == 1 - gp.quicksum(
-                RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet
-            ),
+            nodeUnreliability[u] == 1 - gp.quicksum(RELIABILITY_BY_NODE_TYPE[i] * x[u, i] for i in nodesTypeSet),
             name=f"NodeUnreliability_{u}"
         )
         model.addGenConstrLog(  # Definición de logNodeReliability[u]
-            nodeReliability[u], logNodeReliability[
-                u], name=f"LogNodeReliability_{u}"
+            nodeReliability[u], logNodeReliability[u],
+            name=f"LogNodeReliability_{u}"
         )
         model.addGenConstrLog(  # Definición de logNodeUnreliability[u]
-            nodeUnreliability[u], logNodeUnreliability[
-                u], name=f"LogNodeUnreliability_{u}"
+            nodeUnreliability[u], logNodeUnreliability[u],
+            name=f"LogNodeUnreliability_{u}"
         )
 
     for j in subnetSet: # Definición de confiabilidad por subredes
@@ -204,8 +140,8 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
             logSubnetReliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name=f"logSubnetReliability_{j}")
 
             model.addConstr(  # Definir subnetUnreliability
-                subnetUnreliability == gp.quicksum(
-                    y[u, j] * logNodeUnreliability[u] for u in nodeSet),
+                subnetUnreliability == gp.quicksum(y[u, j] * logNodeUnreliability[u] for u in nodeSet),
+                name=f"SubnetUnreliability_def_{j}"
             )
             model.addGenConstrExp(  # Definir relación del exp^K_j
                 subnetUnreliability, expSubnetUnreliability,
@@ -219,19 +155,16 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
                 subnetReliability, logSubnetReliability,
                 name=f"LogSubnetReliability_{j}"
             )
-
-            model.addConstr(
+            model.addConstr( # Definición de logSubnetTotalReliability[j]
                 logSubnetTotalReliability[j] == logSubnetReliability,
                 name=f"ParallelSubnetReliability_def_{j}"
             )
 
     # Restricción para la confiabilidad total de la red
-    totalReliability = model.addVar(
-        vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="TotalReliability")
+    totalReliability = model.addVar(vtype=GRB.CONTINUOUS, lb=-GRB.INFINITY, name="TotalReliability")
 
     model.addConstr(  # Definición de totalReliability
-        totalReliability == gp.quicksum(
-            logSubnetTotalReliability[j] for j in subnetSet),
+        totalReliability == gp.quicksum(logSubnetTotalReliability[j] for j in subnetSet),
         name="TotalReliability_def"
     )
 
