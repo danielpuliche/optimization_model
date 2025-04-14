@@ -103,17 +103,131 @@ def graficar_costosVsConfiabilidad_topologiasJuntas(totalNodes, minimizedCosts, 
 
         print(f"Grafica para {n} nodos guardada")
 
+# Grafica Número de nodos juntos
+
+
+def graficar_costosVsConfiabilidad_porTopologia(totalNodes, minimizedCosts,
+                                                seriesRequiredReliabilities,
+                                                parallelRequiredReliabilities,
+                                                hybridRequiredReliabilities):
+    print("Graficando costos vs confiabilidad por topología...")
+
+    topologias = [
+        ("Serie", "serie", seriesRequiredReliabilities, 'blue'),
+        ("Parallel", "paralelo", parallelRequiredReliabilities, 'orange'),
+        ("Hybrid", "hibrido", hybridRequiredReliabilities, 'green')
+    ]
+
+    for titulo, key, reliabilities, color_base in topologias:
+        plt.figure(figsize=(10, 6))
+        colores = ['blue', 'red', 'green']  # Un color por cada línea/nodos
+
+        for i, n in enumerate(totalNodes):
+            costos = minimizedCosts[f"nodos_{n}_{key}"]
+            plt.plot(reliabilities, costos, label=f'{n} Nodos',
+                     color=colores[i], linestyle='-', marker='.')
+
+            # Etiqueta del primer valor no nulo
+            for x, y in zip(reliabilities, costos):
+                if y is not None:
+                    plt.text(x, y, f"({x:.2f}, {y:.2f})", fontsize=8,
+                             color=colores[i], ha='left')
+                    break
+
+            # Etiqueta del último valor no nulo
+            for x, y in reversed(list(zip(reliabilities, costos))):
+                if y is not None:
+                    plt.text(x, y, f"({x:.2f}, {y:.2f})", fontsize=8,
+                             color=colores[i], ha='right')
+                    break
+
+        # Configuración visual
+        plt.title(
+            f'Minimized Costs vs Required Reliability - Nodes Number Comparation - {titulo} Topology')
+        plt.xlabel('Required Reliability')
+        plt.ylabel('Minimized Costs')
+        plt.grid(True)
+        plt.legend(loc='upper left')
+
+        # Guardado de la gráfica
+        directory = f"graficas/NodosJuntosPorTopologia/{key}/"
+        fileName = f"costVsReliability_{key}.png"
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        plt.savefig(os.path.join(directory, fileName))
+        plt.close()
+
+        print(f"Gráfica de topología {titulo} guardada")
+
+
+# grafica de zoom
+def graficar_costos_zoom_hibrido_paralelo(totalNodes, minimizedCosts,
+                                          parallelRequiredReliabilities,
+                                          hybridRequiredReliabilities):
+    print("Graficando zoom para topologías Híbrido y Paralelo...")
+
+    topologias = [
+        ("Híbrido", "hibrido", hybridRequiredReliabilities, (0.90, 1.00)),
+        ("Paralelo", "paralelo", parallelRequiredReliabilities, (0.90, 1.00))
+    ]
+
+    for titulo, key, reliabilidades, (x_min, x_max) in topologias:
+        plt.figure(figsize=(10, 6))
+        colores = ['blue', 'red', 'green']
+
+        for i, n in enumerate(totalNodes):
+            costos = minimizedCosts[f"nodos_{n}_{key}"]
+            plt.plot(reliabilidades, costos, label=f'{n} Nodos',
+                     color=colores[i], linestyle='-', marker='.')
+
+            # Etiqueta del primer valor no nulo
+            for x, y in zip(reliabilidades, costos):
+                if y is not None:
+                    plt.text(x, y, f"({x:.2f}, {y:.2f})", fontsize=8,
+                             color=colores[i], ha='left')
+                    break
+
+            # Etiqueta del último valor no nulo
+            for x, y in reversed(list(zip(reliabilidades, costos))):
+                if y is not None:
+                    plt.text(x, y, f"({x:.2f}, {y:.2f})", fontsize=8,
+                             color=colores[i], ha='right')
+                    break
+
+        plt.title(
+            f'Minimized Costs vs Required Reliability - Zoom - Topología {titulo}')
+        plt.xlabel('Required Reliability')
+        plt.ylabel('Minimized Costs')
+        plt.grid(True)
+        plt.legend(loc='upper left')
+        plt.xlim(x_min, x_max)
+
+        # Guardado
+        directory = f"graficas/NodosJuntosPorTopologia/{key}/"
+        fileName = f"costVsReliability_{key}_zoom.png"
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        plt.savefig(os.path.join(directory, fileName))
+        plt.close()
+
+        print(f"Gráfica con zoom para {titulo} guardada")
+
 
 # Ejecución
-
 minReliability = 0.999
-totalNodes=[5,6,11]
+totalNodes = [5, 6, 11]
 
 seriesRequiredReliabilities = generate_equidistant_list(0.5, MAX_RELIABILITY, NUM_EQUIDISTANT_VALUES)
 parallelRequiredReliabilities = generate_equidistant_list(0.5, MAX_RELIABILITY, NUM_EQUIDISTANT_VALUES)
 hybridRequiredReliabilities = generate_equidistant_list(0.5, MAX_RELIABILITY, NUM_EQUIDISTANT_VALUES)
 
 minimizedCosts = calcular_combinaciones_confLineal(totalNodes, seriesRequiredReliabilities, parallelRequiredReliabilities, hybridRequiredReliabilities)
-graficar_costosVsConfiabilidad(totalNodes, minimizedCosts, seriesRequiredReliabilities, parallelRequiredReliabilities, hybridRequiredReliabilities)
+graficar_costosVsConfiabilidad(totalNodes, minimizedCosts, seriesRequiredReliabilities,parallelRequiredReliabilities, hybridRequiredReliabilities)
 graficar_costosVsConfiabilidad_topologiasJuntas(totalNodes, minimizedCosts, seriesRequiredReliabilities, parallelRequiredReliabilities, hybridRequiredReliabilities)
+graficar_costosVsConfiabilidad_porTopologia(totalNodes, minimizedCosts, seriesRequiredReliabilities, parallelRequiredReliabilities, hybridRequiredReliabilities)
+graficar_costos_zoom_hibrido_paralelo(totalNodes, minimizedCosts, parallelRequiredReliabilities, hybridRequiredReliabilities)
 print("Fin del programa")

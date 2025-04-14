@@ -5,7 +5,9 @@ import math
 
 # Importación de utilidades y parámetros globales
 from utils.validation import validar_entrada
-from config import LINK_COST, RELIABILITY_BY_NODE_TYPE  # Costos y confiabilidades por tipo de nodo
+# Costos y confiabilidades por tipo de nodo
+from config import LINK_COST, RELIABILITY_BY_NODE_TYPE
+
 
 def serie_model(baseModel, totalNodes, requiredReliability):
     """
@@ -41,7 +43,8 @@ def serie_model(baseModel, totalNodes, requiredReliability):
     # Recuperar la variable linksCost del modelo base
     linksCost = model.getVarByName("linksCost")
     if linksCost is None:
-        raise ValueError("No se encontró la variable linksCost en el modelo base.")
+        raise ValueError(
+            "No se encontró la variable linksCost en el modelo base.")
 
     # Recuperar las variables de decisión x[u, i]
     x = {
@@ -70,12 +73,14 @@ def serie_model(baseModel, totalNodes, requiredReliability):
             name=f"NodeReliability_{u}"
         )
         model.addGenConstrLog(
-            nodeReliability[u], logNodeReliability[u], name=f"LogNodeReliability_{u}"
+            nodeReliability[u], logNodeReliability[
+                u], name=f"LogNodeReliability_{u}"
         )
 
     # Restricción para la confiabilidad total de la red
     model.addConstr(
-        gp.quicksum(logNodeReliability[u] for u in nodeSet) >= math.log(requiredReliability),
+        gp.quicksum(logNodeReliability[u] for u in nodeSet) >= math.log(
+            requiredReliability),
         name="TotalReliability"
     )
 

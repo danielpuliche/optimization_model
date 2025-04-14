@@ -126,8 +126,6 @@ def generate_equidistant_list(start, end, num_elements):
         result.append(start + i * step)
     return result
 
-# -----------------------graficas------------------------------------------
-
 def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts, topology, totalNodes):
     """
     Genera un gráfico de costos minimizados en función de la fiabilidad requerida.
