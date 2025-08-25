@@ -170,7 +170,7 @@ def hybrid_model(baseModel, totalNodes, requiredReliability):
 
     model.addConstr(  # Constraint de confiabilidad total
         totalReliability >= math.log(requiredReliability),
-        name="TotalReliability"
+        name="TotalReliability_Constraint"
     )
 
     ################## FIN DE CONFIABILIDAD ##################

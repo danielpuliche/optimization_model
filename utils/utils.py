@@ -139,29 +139,29 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts, topo
     """
     plt.figure(figsize=(10, 6))
     plt.plot(requiredReliabilities, serieMinimizedCosts, linestyle='-', color='b', marker='.')
-    plt.title(f'Minimized Costs vs Required Reliability - {topology} Topology - {totalNodes} Nodes')
+    # plt.title(f'Minimized Costs vs Required Reliability - {topology} Topology - {totalNodes} Nodes')
     plt.xlabel('Required Reliability')
     plt.ylabel('Minimized Costs')
     plt.grid(True)
 
     # Añadir un label para el último valor
-    searchIndex = -1
-    isYValueValide = False
-    while not isYValueValide:
-        last_x = requiredReliabilities[searchIndex]
-        last_y = serieMinimizedCosts[searchIndex]
-        if last_y is not None:
-            isYValueValide = True
-        else:
-            searchIndex -= 1
+    # searchIndex = -1
+    # isYValueValide = False
+    # while not isYValueValide:
+    #     last_x = requiredReliabilities[searchIndex]
+    #     last_y = serieMinimizedCosts[searchIndex]
+    #     if last_y is not None:
+    #         isYValueValide = True
+    #     else:
+    #         searchIndex -= 1
 
-    first_x = requiredReliabilities[0]
-    first_y = serieMinimizedCosts[0]
+    # first_x = requiredReliabilities[0]
+    # first_y = serieMinimizedCosts[0]
 
-    plt.text(last_x, last_y, f'({last_x:.8f}, {last_y:.2f})', fontsize=10,
-             ha='left', va='bottom', color='blue')
-    plt.text(first_x, first_y, f'({first_x:.8f}, {first_y:.2f})', fontsize=10,
-             ha='left', va='bottom', color='blue')
+    # plt.text(last_x, last_y, f'({last_x:.8f}, {last_y:.2f})', fontsize=10,
+    #          ha='left', va='bottom', color='blue')
+    # plt.text(first_x, first_y, f'({first_x:.8f}, {first_y:.2f})', fontsize=10,
+    #          ha='left', va='bottom', color='blue')
 
     directory = f"graficas/{topology}"
     fileName = f"costVsReliability_{topology}_{totalNodes}.png"
@@ -171,6 +171,7 @@ def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts, topo
 
     plt.savefig(os.path.join(directory, fileName))
     # plt.show()
+    plt.close()
 
 # grafica lineas
 
@@ -201,15 +202,16 @@ def graficar_costos_totales(confiabilidades, cantidades_nodos, costos_totales):
     # plt.yscale('log')
     plt.xlabel('Nodes Count')
     plt.ylabel('Minimized Costs')
-    plt.title('Costo vs Cantidad de Nodos para Diferentes Confiabilidades')
+    # plt.title('Costo vs Cantidad de Nodos para Diferentes Confiabilidades')
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     plt.show()
+    plt.close()
 
 # -------grafica barras
 
-def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_sets):
+def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_sets, topology):
     """
     Genera una gráfica de barras apiladas de tipos de nodos (low, medium, high),
     agrupadas por combinación de confiabilidad y número de nodos.
@@ -239,17 +241,17 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
                     high += 1
 
         datos.append({
-            "confiabilidad": conf,
-            "cantidad_nodos": nodos,
-            "low": low,
-            "medium": medium,
-            "high": high
+            "Reliability": conf,
+            "Nodes": nodos,
+            "Low": low,
+            "Medium": medium,
+            "High": high
         })
 
     # Agrupar por confiabilidad para graficar
     agrupados = defaultdict(list)
     for d in datos:
-        agrupados[d["confiabilidad"]].append(d)
+        agrupados[d["Reliability"]].append(d)
 
     fig, ax = plt.subplots(figsize=(12, 6))
     bar_width = 0.25
@@ -257,9 +259,9 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
     posiciones = []
 
     colores = {
-        "low": "#1f77b4",
-        "medium": "#ff7f0e",
-        "high": "#2ca02c"
+        "Low": "#1f77b4",
+        "Medium": "#ff7f0e",
+        "High": "#2ca02c"
     }
 
     for i, conf in enumerate(sorted(agrupados.keys())):
@@ -268,15 +270,15 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
             x = i * espacio_entre_grupos + j * bar_width
             posiciones.append(x)
 
-            l, m, h = item["low"], item["medium"], item["high"]
-            ax.bar(x, l, bar_width, color=colores["low"], edgecolor='black', linewidth=0.8)
-            ax.bar(x, m, bar_width, bottom=l, color=colores["medium"], edgecolor='black', linewidth=0.8)
-            ax.bar(x, h, bar_width, bottom=l + m, color=colores["high"], edgecolor='black', linewidth=0.8)
+            l, m, h = item["Low"], item["Medium"], item["High"]
+            ax.bar(x, l, bar_width, color=colores["Low"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, m, bar_width, bottom=l, color=colores["Medium"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, h, bar_width, bottom=l + m, color=colores["High"], edgecolor='black', linewidth=0.8)
 
             for height, y0, text in [(l, 0, l), (m, l, m), (h, l + m, h)]:
                 if height > 0:
                     ax.text(x, y0 + height / 2, str(int(text)),
-                            ha='center', va='center', fontsize=8, color="white")
+                            ha='center', va='center', fontsize=12, color="white")
 
     xtick_positions = [
         i * espacio_entre_grupos + (len(agrupados[conf]) - 1) * bar_width / 2
@@ -286,17 +288,28 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
 
     ax.set_xticks(xtick_positions)  # Centrar las etiquetas en el grupo
     ax.set_xticklabels(xtick_labels)
-    ax.set_ylabel('Cantidad de nodos')
-    ax.set_xlabel('Confiabilidad')
-    ax.set_title('Distribución de Nodos por Confiabilidad')
+    ax.set_ylabel('Node Count', fontsize=16)
+    ax.set_xlabel('Required Reliability', fontsize=16)
+    ax.tick_params(axis='x', labelsize=12)
+    ax.tick_params(axis='y', labelsize=12)
+    # ax.set_title('Distribución de Nodos por Confiabilidad')
     ax.legend(handles=[
-        plt.Rectangle((0, 0), 1, 1, color=colores["low"], label='Low', edgecolor='black', linewidth=0.8),
-        plt.Rectangle((0, 0), 1, 1, color=colores["medium"], label='Medium', edgecolor='black', linewidth=0.8),
-        plt.Rectangle((0, 0), 1, 1, color=colores["high"], label='High', edgecolor='black', linewidth=0.8),
-    ], title="Node Type")
+        plt.Rectangle((0, 0), 1, 1, color=colores["Low"], label='Low', edgecolor='black', linewidth=0.8),
+        plt.Rectangle((0, 0), 1, 1, color=colores["Medium"], label='Medium', edgecolor='black', linewidth=0.8),
+        plt.Rectangle((0, 0), 1, 1, color=colores["High"], label='High', edgecolor='black', linewidth=0.8),
+    ], title="Node Type", fontsize=14, title_fontsize=14)
 
     ax.grid(True, axis='y', linestyle='--', alpha=0.6)
     ax.set_yticks(range(0, max(cantidades_nodos) + 2, 1))  # Saltos en y de 1 en 1
     plt.ylim(0, max(cantidades_nodos) + 1)
     plt.tight_layout()
+
+    directory = f"graficas/{topology}"
+    fileName = f"apilado_{topology}.png"
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    plt.savefig(os.path.join(directory, fileName))
     plt.show()
+    plt.close()

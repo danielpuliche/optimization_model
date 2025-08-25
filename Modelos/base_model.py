@@ -82,6 +82,12 @@ def base_model(totalNodes):
     model.setParam('OutputFlag', 0)  # Desactiva la salida de Gurobi en consola
 
     # Optimización
+
+    model.setParam('FeasibilityTol', 1e-9)
+    model.setParam('OptimalityTol', 1e-9)
+    model.setParam('IntFeasTol', 1e-9)
+    model.setParam('MIPGap', 1e-9)
+
     model.optimize()
 
     return model
