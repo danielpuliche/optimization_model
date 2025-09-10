@@ -1,34 +1,34 @@
-def validar_entrada(totalNodes: int, linkCost: float, reliabilityByNodeType: list | dict) -> None:
+def input_validation(totalNodes: int, linkCost: float, reliabilityByNodeType: list | dict) -> None:
     """
-    Valida los parámetros de entrada para los modelos de optimización.
+    Validates input parameters for optimization models.
 
     Args:
-        totalNodes (int): Número total de nodos en la red. Debe ser >= 4.
-        linkCost (float): Costo de los enlaces en la red. Debe ser > 0.
-        reliabilityByNodeType (list | dict): Fiabilidad por tipo de nodo. Debe ser una lista o diccionario no vacío.
+        totalNodes (int): Total number of nodes in the network. Must be >= 4.
+        linkCost (float): Cost of links in the network. Must be > 0.
+        reliabilityByNodeType (list | dict): Reliability by node type. Must be a non-empty list or dictionary.
 
     Raises:
-        ValueError: Si alguno de los parámetros no cumple con los requisitos.
+        ValueError: If any of the parameters do not meet the requirements.
 
-    Ejemplo:
-        >>> validar_entrada(4, 10, [0.6, 0.7, 0.8])
-        >>> validar_entrada(5, 15, {0: 0.6, 1: 0.7, 2: 0.8})
+    Example:
+        >>> input_validation(4, 10, [0.6, 0.7, 0.8])
+        >>> input_validation(5, 15, {0: 0.6, 1: 0.7, 2: 0.8})
     """
     if totalNodes < 4:
         raise ValueError(
-            f"El número de nodos debe ser al menos 4. Se recibió: {totalNodes}")
+            f"The number of nodes must be at least 4. Received: {totalNodes}")
     if linkCost <= 0:
         raise ValueError(
-            f"El costo de un enlace debe ser mayor a 0. Se recibió: {linkCost}")
+            f"The cost of a link must be greater than 0. Received: {linkCost}")
     if not isinstance(reliabilityByNodeType, (list, dict)) or len(reliabilityByNodeType) == 0:
         raise ValueError(
-            f"reliabilityByNodeType debe ser una lista o diccionario no vacío. Se recibió: {type(reliabilityByNodeType)} con longitud {len(reliabilityByNodeType) if isinstance(reliabilityByNodeType, (list, dict)) else 'N/A'}"
+            f"reliabilityByNodeType must be a non-empty list or dictionary. Received: {type(reliabilityByNodeType)} with length {len(reliabilityByNodeType) if isinstance(reliabilityByNodeType, (list, dict)) else 'N/A'}"
         )
     if isinstance(reliabilityByNodeType, list):
         if not all(isinstance(value, (int, float)) and 0 <= value <= 1 for value in reliabilityByNodeType):
             raise ValueError(
-                "Todos los valores en reliabilityByNodeType deben ser números entre 0 y 1.")
+                "All values in reliabilityByNodeType must be numbers between 0 and 1.")
     elif isinstance(reliabilityByNodeType, dict):
         if not all(isinstance(value, (int, float)) and 0 <= value <= 1 for value in reliabilityByNodeType.values()):
             raise ValueError(
-                "Todos los valores en reliabilityByNodeType deben ser números entre 0 y 1.")
+                "All values in reliabilityByNodeType must be numbers between 0 and 1.")

@@ -1,3 +1,10 @@
+"""
+Utilities module for network reliability optimization analysis.
+
+This module provides functions for processing optimization results, generating plots,
+and handling data visualization for network topology optimization problems.
+"""
+
 from collections import defaultdict
 from itertools import product
 import pandas as pd
@@ -7,305 +14,306 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def procesarResultadosTabla(totalNodes, decisionVariables, tipo="general"):
+# ============================================================
+# Data Processing Functions
+# ============================================================
+
+def process_results_table(totalNodes, decisionVariables, model_type="general"):
     """
-    Procesa las variables de decisión para construir listas de nodos activos.
+    Processes decision variables to build lists of active nodes.
 
-    Parámetros:
-    - totalNodes (int): Número de nodos en el modelo.
-    - decisionVariables (dict): Variables de decisión y sus valores.
-    - tipo (str): Tipo de modelo ("general", "hibrido").
+    Args:
+        totalNodes (int): Number of nodes in the model.
+        decisionVariables (dict): Decision variables and their values.
+        model_type (str): Type of model ("general", "hybrid").
 
-    Retorna:
-    - Tuple[List[List[int]], Optional[List[List[int]]]]: Listas de nodos activos (x y opcionalmente y).
+    Returns:
+        tuple: Lists of active nodes (x and optionally y).
+            - x_active_nodes (List[List[int]]): Active nodes for x variables
+            - y_active_nodes (Optional[List[List[int]]]): Active nodes for y variables (hybrid only)
     """
-    xVars = {var: val for var, val in decisionVariables.items()
-             if var.startswith("x")}
-    yVars = {var: val for var, val in decisionVariables.items()
-             if var.startswith("y")}
+    x_vars = {var: val for var, val in decisionVariables.items()
+              if var.startswith("x")}
+    y_vars = {var: val for var, val in decisionVariables.items()
+              if var.startswith("y")}
 
-    xactiveNodes = procesarVariablesActivas(xVars, totalNodes, "x")
-    yactiveNodes = procesarVariablesActivas(
-        yVars, totalNodes, "y") if tipo == "hibrido" else None
+    x_active_nodes = process_active_variables(x_vars, totalNodes, "x")
+    y_active_nodes = process_active_variables(
+        y_vars, totalNodes, "y") if model_type == "hybrid" else None
 
-    return xactiveNodes, yactiveNodes
+    return x_active_nodes, y_active_nodes
 
 
-def mostrarResultadosTabla(totalNodes, minimizedCost, decisionVariables, tipo="general"):
+def show_results_table(totalNodes, minimizedCost, decisionVariables, model_type="general"):
     """
-    Muestra los resultados de optimización en formato tabular.
+    Displays optimization results in tabular format.
 
-    Parámetros:
-    - totalNodes (int): Número de nodos en el modelo.
-    - minimizedCost (float): Costo total de la solución.
-    - decisionVariables (dict): Variables de decisión y sus valores.
-    - tipo (str): Tipo de modelo ("general", "hibrido").
+    Args:
+        totalNodes (int): Number of nodes in the model.
+        minimizedCost (float): Total cost of the solution.
+        decisionVariables (dict): Decision variables and their values.
+        model_type (str): Type of model ("general", "hybrid").
     """
     print("=" * 52)
-    print(f"Cantidad de Nodos: {totalNodes}")
+    print(f"Number of Nodes: {totalNodes}")
     print("=" * 52)
 
     if minimizedCost is None:
-        print("No se encontró solución")
+        print("No solution found")
         return
 
-    print("Resultado de la Optimización:")
+    print("Optimization Results:")
     print("=" * 52)
-    print(f"Costo Total: {minimizedCost}")
-    print(f"Costo nodos: {decisionVariables.get('nodesCost', 'N/A')}")
-    print(f"Costo enlaces: {decisionVariables.get('linksCost', 'N/A')}")
+    print(f"Total Cost: {minimizedCost}")
+    print(f"Nodes Cost: {decisionVariables.get('nodesCost', 'N/A')}")
+    print(f"Links Cost: {decisionVariables.get('linksCost', 'N/A')}")
     print("=" * 52)
 
-    xactiveNodes, yactiveNodes = procesarResultadosTabla(
-        totalNodes, decisionVariables, tipo)
+    x_active_nodes, y_active_nodes = process_results_table(
+        totalNodes, decisionVariables, model_type)
 
-    # Mostrar tabla de nodos activos (x)
+    # Display active nodes table (x)
     columns_titles_x = ["Low Cost", "Mid Cost", "High Cost"]
     row_index = [u + 1 for u in range(totalNodes)]
-    tablax = pd.DataFrame(
-        xactiveNodes, columns=columns_titles_x, index=row_index)
-    print("Nodos activos (x):")
-    print(tablax)
+    table_x = pd.DataFrame(
+        x_active_nodes, columns=columns_titles_x, index=row_index)
+    print("Active nodes (x):")
+    print(table_x)
     print("=" * 52)
 
-    # Mostrar tabla de nodos activos (y) si es modelo híbrido
-    if tipo == "hibrido" and yactiveNodes:
-        columns_titles_y = [f"Subred {i}" for i in range(len(yactiveNodes[0]))]
-        tablay = pd.DataFrame(
-            yactiveNodes, columns=columns_titles_y, index=row_index)
-        print("Nodos activos (y):")
-        print(tablay)
+    # Display active nodes table (y) for hybrid model
+    if model_type == "hybrid" and y_active_nodes:
+        columns_titles_y = [f"Subnet {i}" for i in range(len(y_active_nodes[0]))]
+        table_y = pd.DataFrame(
+            y_active_nodes, columns=columns_titles_y, index=row_index)
+        print("Active nodes (y):")
+        print(table_y)
         print("=" * 52)
 
 
-def procesarVariablesActivas(variables: dict, cantidadNodos: int, prefix: str) -> list[list[int]]:
+def process_active_variables(variables: dict, node_count: int, prefix: str) -> list[list[int]]:
     """
-    Procesa las variables activas para construir una lista de valores por nodo.
+    Processes active variables to build a list of values per node.
 
-    Parámetros:
-    - variables (dict): Variables de decisión y sus valores.
-    - cantidadNodos (int): Número de nodos en el modelo.
-    - prefix (str): Prefijo de las variables ("x" o "y").
+    Args:
+        variables (dict): Decision variables and their values.
+        node_count (int): Number of nodes in the model.
+        prefix (str): Variable prefix ("x" or "y").
 
-    Retorna:
-    - List[List[int]]: Lista de listas con los valores de las variables activas.
+    Returns:
+        List[List[int]]: List of lists with active variable values.
     """
-    activeNodes = [[] for _ in range(cantidadNodos)]
+    active_nodes = [[] for _ in range(node_count)]
     for var, val in variables.items():
         if var.startswith(prefix):
             u, _ = map(int, var[len(prefix) + 1:-1].split(","))
-            activeNodes[u].append(int(val))
-    return activeNodes
+            active_nodes[u].append(int(val))
+    return active_nodes
 
+
+# ============================================================
+# Utility Functions
+# ============================================================
 
 def generate_equidistant_list(start, end, num_elements):
     """
     Generates a list of equidistant numbers between two given floats, excluding the endpoints.
 
     Args:
-        start: The starting float.
-        end: The ending float.
-        num_elements: The number of elements in the resulting list.
+        start (float): The starting value.
+        end (float): The ending value.
+        num_elements (int): The number of elements in the resulting list.
 
     Returns:
-        A list of equidistant floats between start and end (excluding start and end).
-        Returns an empty list if num_elements is zero or less.
-        Returns an empty list if start and end are the same
-    """
+        list: A list of equidistant floats between start and end (excluding endpoints).
 
+    Raises:
+        ValueError: If num_elements <= 0, start == end, or end < start.
+
+    Example:
+        >>> generate_equidistant_list(0.5, 1.0, 3)
+        [0.625, 0.75, 0.875]
+    """
     if num_elements <= 0:
-        raise ValueError("El número de elementos debe ser mayor a 0.")
+        raise ValueError("Number of elements must be greater than 0.")
     if start == end:
-        raise ValueError("Los valores de inicio y fin deben ser diferentes.")
+        raise ValueError("Start and end values must be different.")
     if end < start:
-        raise ValueError("El valor de fin debe ser mayor que el de inicio.")
+        raise ValueError("End value must be greater than start value.")
 
     step = (end - start) / (num_elements + 1)
     result = []
-    for i in range(1, num_elements+1):
+    for i in range(1, num_elements + 1):
         result.append(start + i * step)
     return result
 
-def graficar_costos_minimizados(requiredReliabilities, serieMinimizedCosts, topology, totalNodes):
+
+# ============================================================
+# Plotting Functions
+# ============================================================
+
+def plot_minimized_costs_single(requiredReliabilities, minimizedCosts, topology, totalNodes, analysis_type="standard"):
     """
-    Genera un gráfico de costos minimizados en función de la fiabilidad requerida.
+    Generates a plot of minimized costs as a function of required reliability for a single topology.
 
-    Parámetros:
-    - requiredReliabilities (list): Lista de valores de fiabilidad requerida.
-    - serieMinimizedCosts (list): Lista de costos minimizados correspondientes.
+    Args:
+        requiredReliabilities (list): List of required reliability values.
+        minimizedCosts (list): List of corresponding minimized costs.
+        topology (str): Network topology name (e.g., 'series', 'mesh', 'hybrid').
+        totalNodes (int): Total number of nodes in the network.
+        analysis_type (str): Type of analysis ("standard" or "high_reliability").
 
-    Ejemplo:
-    >>> graficar_costos_minimizados([0.6, 0.7, 0.8], [100, 120, 150])
+    Example:
+        >>> plot_minimized_costs_single([0.6, 0.7, 0.8], [100, 120, 150], 'series', 6, "standard")
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(requiredReliabilities, serieMinimizedCosts, linestyle='-', color='b', marker='.')
-    # plt.title(f'Minimized Costs vs Required Reliability - {topology} Topology - {totalNodes} Nodes')
+    plt.plot(requiredReliabilities, minimizedCosts, linestyle='-', color='b', marker='.')
     plt.xlabel('Required Reliability')
     plt.ylabel('Minimized Costs')
     plt.grid(True)
 
-    # Añadir un label para el último valor
-    # searchIndex = -1
-    # isYValueValide = False
-    # while not isYValueValide:
-    #     last_x = requiredReliabilities[searchIndex]
-    #     last_y = serieMinimizedCosts[searchIndex]
-    #     if last_y is not None:
-    #         isYValueValide = True
-    #     else:
-    #         searchIndex -= 1
-
-    # first_x = requiredReliabilities[0]
-    # first_y = serieMinimizedCosts[0]
-
-    # plt.text(last_x, last_y, f'({last_x:.8f}, {last_y:.2f})', fontsize=10,
-    #          ha='left', va='bottom', color='blue')
-    # plt.text(first_x, first_y, f'({first_x:.8f}, {first_y:.2f})', fontsize=10,
-    #          ha='left', va='bottom', color='blue')
-
-    directory = f"graficas/{topology}"
+    # Create organized directory structure
+    directory = f"Figures/{analysis_type}/individual_topologies/{topology}"
     fileName = f"costVsReliability_{topology}_{totalNodes}.png"
 
     if not os.path.exists(directory):
         os.makedirs(directory)
 
     plt.savefig(os.path.join(directory, fileName))
-    # plt.show()
     plt.close()
 
-# grafica lineas
 
-def graficar_costos_totales(confiabilidades, cantidades_nodos, costos_totales):
+def plot_total_costs(reliabilities, node_counts, total_costs):
     """
-    Genera una gráfica de líneas de costos totales en escala logarítmica,
-    usando únicamente la información que retorna el modelo.
+    Generates a line plot of total costs, using only the information returned by the model.
 
-    Parámetros:
-    - confiabilidades (list[float])
-    - cantidades_nodos (list[int])
-    - costos_totales (list[float]): lista de costos en orden de product(confiabilidad, nodos)
+    Args:
+        reliabilities (list[float]): List of reliability values.
+        node_counts (list[int]): List of node counts.
+        total_costs (list[float]): List of costs in product order (reliability, nodes).
     """
+    # Build costs_by_reliability internally
+    combinations = list(product(reliabilities, node_counts))
+    costs_by_reliability = defaultdict(list)
 
-    # Construir costos_por_confiabilidad internamente
-    combinaciones = list(product(confiabilidades, cantidades_nodos))
-    costos_por_confiabilidad = defaultdict(list)
+    for idx, (reliability, _) in enumerate(combinations):
+        costs_by_reliability[reliability].append(total_costs[idx])
 
-    for idx, (conf, _) in enumerate(combinaciones):
-        costos_por_confiabilidad[conf].append(costos_totales[idx])
-
-    # Graficar
+    # Create plot
     plt.figure(figsize=(12, 6))
 
-    for conf, costos in costos_por_confiabilidad.items():
-        plt.plot(cantidades_nodos, costos, marker='o', label=f'Confiabilidad: {conf}')
+    for reliability, costs in costs_by_reliability.items():
+        plt.plot(node_counts, costs, marker='o', label=f'Reliability: {reliability}')
 
-    # plt.yscale('log')
     plt.xlabel('Nodes Count')
     plt.ylabel('Minimized Costs')
-    # plt.title('Costo vs Cantidad de Nodos para Diferentes Confiabilidades')
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     plt.show()
     plt.close()
 
-# -------grafica barras
 
-def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_sets, topology):
+def plot_stacked_distribution(reliabilities, node_counts, decision_sets, topology, analysis_type="standard"):
     """
-    Genera una gráfica de barras apiladas de tipos de nodos (low, medium, high),
-    agrupadas por combinación de confiabilidad y número de nodos.
+    Generates a stacked bar chart of node types (low, medium, high),
+    grouped by combination of reliability and number of nodes.
 
-    Parámetros:
-    - confiabilidades (list[float]): valores de confiabilidad (en orden de ejecución)
-    - cantidades_nodos (list[int]): cantidades de nodos (en orden de ejecución)
-    - decision_sets (list[dict]): lista de variables de decisión tal como las retorna el modelo
+    Args:
+        reliabilities (list[float]): Reliability values (in execution order).
+        node_counts (list[int]): Node counts (in execution order).
+        decision_sets (list[dict]): List of decision variables as returned by the model.
+        topology (str): Network topology name.
+        analysis_type (str): Type of analysis ("standard" or "high_reliability").
     """
+    combinations = list(product(reliabilities, node_counts))
 
-    combinaciones = list(product(confiabilidades, cantidades_nodos))
-
-    datos = []
+    data = []
     for idx, decision in enumerate(decision_sets):
-        conf, nodos = combinaciones[idx]
+        reliability, nodes = combinations[idx]
         low = medium = high = 0
 
         for var, val in decision.items():
             if var.startswith("x[") and round(val) == 1:
-                _, tipo = map(
+                _, node_type = map(
                     int, var[var.find("[")+1:var.find("]")].split(","))
-                if tipo == 0:
+                if node_type == 0:
                     low += 1
-                elif tipo == 1:
+                elif node_type == 1:
                     medium += 1
-                elif tipo == 2:
+                elif node_type == 2:
                     high += 1
 
-        datos.append({
-            "Reliability": conf,
-            "Nodes": nodos,
+        data.append({
+            "Reliability": reliability,
+            "Nodes": nodes,
             "Low": low,
             "Medium": medium,
             "High": high
         })
 
-    # Agrupar por confiabilidad para graficar
-    agrupados = defaultdict(list)
-    for d in datos:
-        agrupados[d["Reliability"]].append(d)
+    # Group by reliability for plotting
+    grouped = defaultdict(list)
+    for d in data:
+        grouped[d["Reliability"]].append(d)
 
     fig, ax = plt.subplots(figsize=(12, 6))
     bar_width = 0.25
-    espacio_entre_grupos = 1.0
-    posiciones = []
+    group_spacing = 1.0
+    positions = []
 
-    colores = {
+    colors = {
         "Low": "#1f77b4",
         "Medium": "#ff7f0e",
         "High": "#2ca02c"
     }
 
-    for i, conf in enumerate(sorted(agrupados.keys())):
-        grupo = agrupados[conf]
-        for j, item in enumerate(grupo):
-            x = i * espacio_entre_grupos + j * bar_width
-            posiciones.append(x)
+    for i, reliability in enumerate(sorted(grouped.keys())):
+        group = grouped[reliability]
+        for j, item in enumerate(group):
+            x = i * group_spacing + j * bar_width
+            positions.append(x)
 
             l, m, h = item["Low"], item["Medium"], item["High"]
-            ax.bar(x, l, bar_width, color=colores["Low"], edgecolor='black', linewidth=0.8)
-            ax.bar(x, m, bar_width, bottom=l, color=colores["Medium"], edgecolor='black', linewidth=0.8)
-            ax.bar(x, h, bar_width, bottom=l + m, color=colores["High"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, l, bar_width, color=colors["Low"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, m, bar_width, bottom=l, color=colors["Medium"], edgecolor='black', linewidth=0.8)
+            ax.bar(x, h, bar_width, bottom=l + m, color=colors["High"], edgecolor='black', linewidth=0.8)
 
+            # Add text labels for each segment
             for height, y0, text in [(l, 0, l), (m, l, m), (h, l + m, h)]:
                 if height > 0:
                     ax.text(x, y0 + height / 2, str(int(text)),
                             ha='center', va='center', fontsize=12, color="white")
 
+    # Set x-axis ticks and labels
     xtick_positions = [
-        i * espacio_entre_grupos + (len(agrupados[conf]) - 1) * bar_width / 2
-        for i, conf in enumerate(sorted(agrupados.keys()))
+        i * group_spacing + (len(grouped[reliability]) - 1) * bar_width / 2
+        for i, reliability in enumerate(sorted(grouped.keys()))
     ]
-    xtick_labels = [f'{round(conf*100, 10)}%' for conf in sorted(agrupados.keys())]
+    xtick_labels = [f'{round(reliability*100, 10)}%' for reliability in sorted(grouped.keys())]
 
-    ax.set_xticks(xtick_positions)  # Centrar las etiquetas en el grupo
+    ax.set_xticks(xtick_positions)
     ax.set_xticklabels(xtick_labels)
     ax.set_ylabel('Node Count', fontsize=16)
     ax.set_xlabel('Required Reliability', fontsize=16)
     ax.tick_params(axis='x', labelsize=12)
     ax.tick_params(axis='y', labelsize=12)
-    # ax.set_title('Distribución de Nodos por Confiabilidad')
+
+    # Add legend
     ax.legend(handles=[
-        plt.Rectangle((0, 0), 1, 1, color=colores["Low"], label='Low', edgecolor='black', linewidth=0.8),
-        plt.Rectangle((0, 0), 1, 1, color=colores["Medium"], label='Medium', edgecolor='black', linewidth=0.8),
-        plt.Rectangle((0, 0), 1, 1, color=colores["High"], label='High', edgecolor='black', linewidth=0.8),
+        plt.Rectangle((0, 0), 1, 1, color=colors["Low"], label='Low', edgecolor='black', linewidth=0.8),
+        plt.Rectangle((0, 0), 1, 1, color=colors["Medium"], label='Medium', edgecolor='black', linewidth=0.8),
+        plt.Rectangle((0, 0), 1, 1, color=colors["High"], label='High', edgecolor='black', linewidth=0.8),
     ], title="Node Type", fontsize=14, title_fontsize=14)
 
     ax.grid(True, axis='y', linestyle='--', alpha=0.6)
-    ax.set_yticks(range(0, max(cantidades_nodos) + 2, 1))  # Saltos en y de 1 en 1
-    plt.ylim(0, max(cantidades_nodos) + 1)
+    ax.set_yticks(range(0, max(node_counts) + 2, 1))
+    plt.ylim(0, max(node_counts) + 1)
     plt.tight_layout()
 
-    directory = f"graficas/{topology}"
-    fileName = f"apilado_{topology}.png"
+    # Save plot with organized directory structure
+    directory = f"Figures/{analysis_type}/individual_topologies/{topology}"
+    fileName = f"stacked_{topology}.png"
 
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -313,3 +321,153 @@ def graficar_distribucion_apilada(confiabilidades, cantidades_nodos, decision_se
     plt.savefig(os.path.join(directory, fileName))
     plt.show()
     plt.close()
+
+
+# ============================================================
+# Advanced Plotting Functions
+# ============================================================
+
+def plot_costs_comparison_joint_topologies(totalNodes, minimizedCosts, seriesRequiredReliabilities, meshRequiredReliabilities, hybridRequiredReliabilities, analysis_type="standard"):
+    """
+    Plots cost vs reliability comparison for all topologies on the same graph for each node count.
+
+    Args:
+        totalNodes (list): List of node counts to analyze.
+        minimizedCosts (dict): Dictionary with minimized costs for each topology and node count.
+        seriesRequiredReliabilities (list): Reliability values for series topology.
+        meshRequiredReliabilities (list): Reliability values for mesh topology.
+        hybridRequiredReliabilities (list): Reliability values for hybrid topology.
+        analysis_type (str): Type of analysis ("standard" or "high_reliability").
+    """
+    print("Plotting costs vs reliability for joint topologies")
+
+    for n in totalNodes:
+        serieMinimizedCosts = minimizedCosts[f"nodes_{n}_series"]
+        meshMinimizedCosts = minimizedCosts[f"nodes_{n}_mesh"]
+        hybridMinimizedCosts = minimizedCosts[f"nodes_{n}_hybrid"]
+
+        # Plot the results on the same graph
+        plt.figure(figsize=(10, 6))
+        plt.plot(seriesRequiredReliabilities, serieMinimizedCosts, label='Series', color='blue', linestyle='-', marker='.')
+        plt.plot(meshRequiredReliabilities, meshMinimizedCosts, label='Mesh', color='red', linestyle='-', marker='.')
+        plt.plot(hybridRequiredReliabilities, hybridMinimizedCosts, label='Hybrid', color='green', linestyle='-', marker='.')
+
+        plt.xlabel('Required Reliability', fontsize=16)
+        plt.ylabel('Minimized Costs', fontsize=16)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.grid(True)
+        plt.legend(loc='upper left', fontsize=14)
+
+        # Save plot with organized directory structure
+        directory = f"Figures/{analysis_type}/jointTopologies/"
+        fileName = f"CostVsReliability_{n}nodes.png"
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(directory, fileName), dpi=600, bbox_inches='tight')
+        plt.close()
+
+        print(f"Plot for {n} nodes saved")
+
+
+def plot_costs_comparison_by_topology(totalNodes, minimizedCosts, seriesRequiredReliabilities, meshRequiredReliabilities, hybridRequiredReliabilities, analysis_type="standard"):
+    """
+    Plots cost vs reliability comparison by topology, showing different node counts on each graph.
+
+    Args:
+        totalNodes (list): List of node counts to analyze.
+        minimizedCosts (dict): Dictionary with minimized costs for each topology and node count.
+        seriesRequiredReliabilities (list): Reliability values for series topology.
+        meshRequiredReliabilities (list): Reliability values for mesh topology.
+        hybridRequiredReliabilities (list): Reliability values for hybrid topology.
+        analysis_type (str): Type of analysis ("standard" or "high_reliability").
+    """
+    print("Plotting costs vs reliability by topology...")
+
+    topologies = [
+        ("Series", "series", seriesRequiredReliabilities, 'blue'),
+        ("Mesh", "mesh", meshRequiredReliabilities, 'orange'),
+        ("Hybrid", "hybrid", hybridRequiredReliabilities, 'green')
+    ]
+
+    for title, key, reliabilities, color_base in topologies:
+        plt.figure(figsize=(10, 6))
+        colors = ['blue', 'red', 'green']  # One color per line/nodes
+
+        for i, n in enumerate(totalNodes):
+            costs = minimizedCosts[f"nodes_{n}_{key}"]
+            plt.plot(reliabilities, costs, label=f'{n} Nodes',
+                     color=colors[i], linestyle='-', marker='.')
+
+        # Visual configuration
+        plt.xlabel('Required Reliability', fontsize=16)
+        plt.ylabel('Minimized Costs (SCU)', fontsize=16)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.grid(True)
+        plt.legend(loc='upper left', fontsize=14)
+
+        # Save the plot with organized directory structure
+        directory = f"Figures/{analysis_type}/NodesJointByTopology/{key}/"
+        fileName = f"costVsReliability_{key}.png"
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(directory, fileName), dpi=600, bbox_inches='tight')
+        plt.close()
+
+        print(f"Topology {title} plot saved")
+
+
+def plot_costs_zoom_hybrid_mesh_comparison(totalNodes, minimizedCosts, meshRequiredReliabilities, hybridRequiredReliabilities, analysis_type="high_reliability"):
+    """
+    Creates zoomed plots focusing on high reliability ranges for Hybrid and Mesh topologies.
+
+    Args:
+        totalNodes (list): List of node counts to analyze.
+        minimizedCosts (dict): Dictionary with minimized costs for each topology and node count.
+        meshRequiredReliabilities (list): Reliability values for mesh topology.
+        hybridRequiredReliabilities (list): Reliability values for hybrid topology.
+        analysis_type (str): Type of analysis ("standard" or "high_reliability").
+    """
+    print("Plotting zoom for Hybrid and Mesh topologies...")
+
+    topologies = [
+        ("Hybrid", "hybrid", hybridRequiredReliabilities, (0.999, 1.00)),
+        ("Mesh", "mesh", meshRequiredReliabilities, (0.999, 1.00))
+    ]
+
+    for title, key, reliabilities, (x_min, x_max) in topologies:
+        plt.figure(figsize=(10, 6))
+        colors = ['blue', 'red', 'green']
+
+        for i, n in enumerate(totalNodes):
+            costs = minimizedCosts[f"nodes_{n}_{key}"]
+            plt.plot(reliabilities, costs, label=f'{n} Nodes',
+                     color=colors[i], linestyle='-', marker='.')
+
+        plt.xlabel('Required Reliability', fontsize=16)
+        plt.ylabel('Minimized Costs', fontsize=16)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.grid(True)
+        plt.legend(loc='upper left', fontsize=14)
+        plt.xlim(x_min, x_max)
+
+        # Save with organized directory structure
+        directory = f"Figures/{analysis_type}/NodesJointByTopology/{key}/"
+        fileName = f"costVsReliability_{key}_zoom.png"
+
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(directory, fileName), dpi=600, bbox_inches='tight')
+        plt.close()
+
+        print(f"Zoom plot for {title} saved")
